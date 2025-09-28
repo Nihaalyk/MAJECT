@@ -60,7 +60,7 @@ yolov8*.pt
 *.avi
 *.mov
 /t
-# 
+
 Temporary files
 *.tmp
 *.temp
