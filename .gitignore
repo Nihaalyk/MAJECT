@@ -59,8 +59,9 @@ yolov8*.pt
 *.mp4
 *.avi
 *.mov
-
-# Temporary files
+/t
+# 
+Temporary files
 *.tmp
 *.temp
 *.log

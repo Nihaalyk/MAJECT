@@ -5,8 +5,9 @@ A comprehensive real-time behavioral analysis system that combines video and aud
 ## Features
 
 ### Video Analysis
+
 - **Facial Expression Recognition**: Real-time emotion detection using DeepFace
-- **Enhanced Eye Tracking & Blink Detection**: 
+- **Enhanced Eye Tracking & Blink Detection**:
   - Advanced blink detection with adaptive thresholds
   - Real-time blink counting and rate analysis
   - Blink duration and interval tracking
@@ -20,11 +21,13 @@ A comprehensive real-time behavioral analysis system that combines video and aud
 - **Fatigue Detection**: Multi-modal fatigue assessment
 
 ### Audio Analysis
+
 - **Real-time Speech Transcription**: Using Whisper AI for accurate transcription
 - **Audio-based Emotion Detection**: Emotion recognition from voice characteristics
 - **Sentiment Analysis**: Text-based sentiment analysis of transcribed speech
 
 ### Web Dashboard
+
 - **Real-time Video Feed**: Live camera feed with all analysis overlays
 - **Interactive Charts**: Dynamic graphs for blink rates, emotions, and object detection
 - **Remote Controls**: Toggle features like debug mode, landmarks, and object detection
@@ -33,6 +36,7 @@ A comprehensive real-time behavioral analysis system that combines video and aud
 - **WebSocket Communication**: Real-time data streaming with low latency
 
 ### Unified Analysis
+
 - **Multi-modal Fusion**: Intelligent combination of video and audio insights
 - **Real-time Processing**: Low-latency analysis with performance optimization
 - **Comprehensive Reporting**: Detailed JSON output with session statistics
@@ -41,13 +45,15 @@ A comprehensive real-time behavioral analysis system that combines video and aud
 ## Installation
 
 ### Prerequisites
+
 - Python 3.12 or higher
 - macOS (for TensorFlow compatibility)
 - Webcam and microphone access
 
 ### Install with uv (Recommended)
+
 ```bash
-# Clone the repository
+.# Clone the repository
 git clone https://github.com/hackevl2025/behavioral-analyzer.git
 cd behavioral-analyzer
 
@@ -56,6 +62,7 @@ uv sync
 ```
 
 ### Install with pip
+
 ```bash
 pip install -e .
 ```
@@ -63,6 +70,7 @@ pip install -e .
 ## Quick Start
 
 ### Basic Usage
+
 ```python
 from behavioral_analyzer import UnifiedBehavioralAnalyzer, Config
 
@@ -87,6 +95,7 @@ if analyzer.start_analysis():
 ```
 
 ### Command Line Interface
+
 ```bash
 # Run with default settings
 behavioral-analyzer
@@ -102,6 +111,7 @@ behavioral-analyzer --no-video
 ```
 
 ### Web Dashboard
+
 ```bash
 # Launch the web-based dashboard
 uv run python run_web_ui.py
@@ -110,6 +120,7 @@ uv run python run_web_ui.py
 Then open: http://localhost:5000
 
 **Features:**
+
 - Real-time video feed with object detection
 - Live emotion, attention, and posture monitoring
 - Audio transcription and sentiment analysis
@@ -179,16 +190,19 @@ behavioral_analyzer/
 The modular architecture makes it easy to add new analysis features:
 
 ### Adding a New Video Feature
+
 1. Add configuration options to `VideoConfig`
 2. Implement the feature in `VideoAnalyzer`
 3. Update the unified state in `UnifiedBehavioralAnalyzer`
 
 ### Adding a New Audio Feature
+
 1. Add configuration options to `AudioConfig`
 2. Implement the feature in `AudioAnalyzer`
 3. Update the unified state in `UnifiedBehavioralAnalyzer`
 
 ### Example: Adding Heart Rate Detection
+
 ```python
 # In VideoConfig
 @dataclass
@@ -256,7 +270,9 @@ The system includes several performance optimizations:
 4. **Memory issues**: Increase system memory or reduce analysis window sizes
 
 ### Debug Mode
+
 Enable debug mode for detailed logging:
+
 ```python
 config.video.debug_mode = True
 config.audio.debug_mode = True
@@ -267,6 +283,7 @@ config.audio.debug_mode = True
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Development Setup
+
 ```bash
 # Install development dependencies
 uv sync --extra dev
