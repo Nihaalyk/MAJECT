@@ -68,6 +68,69 @@
             height: 100%;
             transition: width 0.3s ease;
         }
+
+        .detected-objects-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .object-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin: 2px;
+        }
+
+        .object-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .object-badge .confidence {
+            margin-left: 8px;
+            font-size: 0.75rem;
+            opacity: 0.9;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .scene-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #495057;
+        }
     </style>
 </head>
 
@@ -190,6 +253,50 @@
                             <div class="col-6">
                                 <div class="h5" id="object-count">0</div>
                                 <small class="text-muted">Objects</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene Detection Panel -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-search"></i> Scene Detection <small class="text-muted">- Objects in
+                                View</small></h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div id="detected-objects-container" class="detected-objects-grid">
+                                    <div class="text-muted text-center py-3" id="no-objects-message">
+                                        <i class="fas fa-eye-slash"></i> No objects detected
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="scene-stats">
+                                    <h6 class="mb-3">Detection Summary</h6>
+                                    <div class="stat-item mb-2">
+                                        <span class="stat-label">Total Objects:</span>
+                                        <span class="stat-value" id="total-objects-count">0</span>
+                                    </div>
+                                    <div class="stat-item mb-2">
+                                        <span class="stat-label">Unique Types:</span>
+                                        <span class="stat-value" id="unique-types-count">0</span>
+                                    </div>
+                                    <div class="stat-item mb-2">
+                                        <span class="stat-label">Confidence Avg:</span>
+                                        <span class="stat-value" id="avg-confidence">0%</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Last Update:</span>
+                                        <span class="stat-value" id="scene-last-update">Never</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -383,6 +490,9 @@
                     document.getElementById('object-count').textContent = data.objects.detections.length;
                 }
 
+                // Update scene detection
+                this.updateSceneDetection(data.objects || {});
+
                 // Update raw data display
                 document.getElementById('raw-data').textContent = JSON.stringify(data, null, 2);
                 document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
@@ -558,6 +668,211 @@
             testCalibratedValues() {
                 console.log('Test button clicked - updating calibrated values');
                 this.updateCalibratedValuesDisplay();
+            }
+
+            updateSceneDetection(objectsData) {
+                const detections = objectsData.detections || [];
+                const container = document.getElementById('detected-objects-container');
+                const noObjectsMessage = document.getElementById('no-objects-message');
+
+                // Filter for interview-relevant objects only
+                const interviewRelevantObjects = this.filterInterviewRelevantObjects(detections);
+
+                // Update summary stats with filtered objects
+                document.getElementById('total-objects-count').textContent = interviewRelevantObjects.length;
+                document.getElementById('scene-last-update').textContent = new Date().toLocaleTimeString();
+
+                if (interviewRelevantObjects.length === 0) {
+                    // Show no relevant objects message
+                    container.innerHTML = '<div class="text-muted text-center py-3" id="no-objects-message"><i class="fas fa-eye-slash"></i> No interview-relevant objects detected</div>';
+                    document.getElementById('unique-types-count').textContent = '0';
+                    document.getElementById('avg-confidence').textContent = '0%';
+                    return;
+                }
+
+                // Group objects by class and calculate stats
+                const objectGroups = {};
+                let totalConfidence = 0;
+
+                interviewRelevantObjects.forEach(detection => {
+                    const className = detection.class_name;
+                    if (!objectGroups[className]) {
+                        objectGroups[className] = {
+                            name: className,
+                            count: 0,
+                            totalConfidence: 0,
+                            maxConfidence: 0
+                        };
+                    }
+                    objectGroups[className].count++;
+                    objectGroups[className].totalConfidence += detection.confidence;
+                    objectGroups[className].maxConfidence = Math.max(objectGroups[className].maxConfidence, detection.confidence);
+                    totalConfidence += detection.confidence;
+                });
+
+                // Update stats
+                const uniqueTypes = Object.keys(objectGroups).length;
+                const avgConfidence = totalConfidence / detections.length;
+
+                document.getElementById('unique-types-count').textContent = uniqueTypes;
+                document.getElementById('avg-confidence').textContent = Math.round(avgConfidence * 100) + '%';
+
+                // Create object badges
+                let badgesHtml = '';
+                Object.values(objectGroups).forEach(group => {
+                    const avgGroupConfidence = group.totalConfidence / group.count;
+                    const displayName = this.formatObjectName(group.name);
+                    const countText = group.count > 1 ? ` (${group.count})` : '';
+
+                    badgesHtml += `
+                        <div class="object-badge" style="background: ${this.getObjectColor(group.name)}">
+                            <i class="fas ${this.getObjectIcon(group.name)}"></i>
+                            <span class="ms-1">${displayName}${countText}</span>
+                            <span class="confidence">${Math.round(avgGroupConfidence * 100)}%</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = badgesHtml;
+            }
+
+            filterInterviewRelevantObjects(detections) {
+                // Define strict interview-relevant objects only
+                const interviewRelevantClasses = [
+                    // Person (the interviewee)
+                    'person',
+
+                    // Technology & Communication (core interview items)
+                    'laptop', 'cell phone', 'keyboard', 'mouse',
+
+                    // Writing & Documentation (only clear items)
+                    'book',
+
+                    // Furniture & Setup (basic interview setup)
+                    'chair', 'dining table',
+
+                    // Personal Items (common in interviews)
+                    'bottle', 'cup'
+                ];
+
+                // Process detections with confidence-based filtering
+                const processedDetections = [];
+
+                detections.forEach(detection => {
+                    const className = detection.class_name.toLowerCase();
+                    const confidence = detection.confidence;
+
+                    // Skip very low confidence detections
+                    if (confidence < 0.5) {
+                        return;
+                    }
+
+                    // High confidence + interview relevant = show specific name
+                    if (confidence >= 0.8 && interviewRelevantClasses.includes(className)) {
+                        processedDetections.push(detection);
+                    }
+                    // Medium confidence or not in strict list = show as "Object"
+                    else if (confidence >= 0.5) {
+                        // Create a generic object detection
+                        const genericDetection = {
+                            ...detection,
+                            class_name: 'object',
+                            original_class: className,
+                            confidence_level: confidence >= 0.7 ? 'medium-high' : 'medium'
+                        };
+                        processedDetections.push(genericDetection);
+                    }
+                });
+
+                return processedDetections;
+            }
+
+            formatObjectName(className) {
+                // Handle generic object case
+                if (className === 'object') {
+                    return 'Object';
+                }
+
+                // Convert class names to more readable format for interview context (strict list only)
+                const nameMap = {
+                    // Person
+                    'person': 'Interviewee',
+
+                    // Technology & Communication (strict interview items only)
+                    'cell phone': 'Mobile Phone',
+                    'laptop': 'Laptop',
+                    'keyboard': 'Keyboard',
+                    'mouse': 'Computer Mouse',
+
+                    // Writing & Documentation (only clear items)
+                    'book': 'Book/Document',
+
+                    // Furniture & Setup (basic interview setup)
+                    'chair': 'Chair',
+                    'dining table': 'Desk/Table',
+
+                    // Personal Items (common in interviews)
+                    'bottle': 'Water Bottle',
+                    'cup': 'Cup/Mug'
+                };
+
+                return nameMap[className] || className.charAt(0).toUpperCase() + className.slice(1);
+            }
+
+            getObjectIcon(className) {
+                // Handle generic object case
+                if (className === 'object') {
+                    return 'fa-cube';
+                }
+
+                // Return appropriate FontAwesome icon for interview-relevant objects only
+                const iconMap = {
+                    // Person
+                    'person': 'fa-user-tie',
+
+                    // Technology & Communication (strict interview items only)
+                    'cell phone': 'fa-mobile-alt',
+                    'laptop': 'fa-laptop',
+                    'keyboard': 'fa-keyboard',
+                    'mouse': 'fa-mouse',
+
+                    // Writing & Documentation (only clear items)
+                    'book': 'fa-book',
+
+                    // Furniture & Setup (basic interview setup)
+                    'chair': 'fa-chair',
+                    'dining table': 'fa-table',
+
+                    // Personal Items (common in interviews)
+                    'bottle': 'fa-wine-bottle',
+                    'cup': 'fa-coffee'
+                };
+
+                return iconMap[className] || 'fa-cube';
+            }
+
+            getObjectColor(className) {
+                // Generate consistent colors for different object types
+                const colors = [
+                    'linear-gradient(135deg, #007bff, #0056b3)',
+                    'linear-gradient(135deg, #28a745, #1e7e34)',
+                    'linear-gradient(135deg, #dc3545, #c82333)',
+                    'linear-gradient(135deg, #ffc107, #e0a800)',
+                    'linear-gradient(135deg, #17a2b8, #138496)',
+                    'linear-gradient(135deg, #6f42c1, #59359a)',
+                    'linear-gradient(135deg, #fd7e14, #e55100)',
+                    'linear-gradient(135deg, #20c997, #17a085)',
+                    'linear-gradient(135deg, #e83e8c, #d91a72)',
+                    'linear-gradient(135deg, #6c757d, #545b62)'
+                ];
+
+                // Use hash of class name to get consistent color
+                let hash = 0;
+                for (let i = 0; i < className.length; i++) {
+                    hash = className.charCodeAt(i) + ((hash << 5) - hash);
+                }
+
+                return colors[Math.abs(hash) % colors.length];
             }
         }
 

@@ -521,7 +521,7 @@ class ObjectDetector:
     def draw_detections(self, frame: np.ndarray, show_confidence: bool = True, 
                        show_class: bool = True, thickness: int = 2) -> np.ndarray:
         """
-        Draw detection bounding boxes on the frame.
+        Draw detection bounding boxes on the frame with interview-relevant filtering.
         
         Args:
             frame: Input frame
@@ -537,7 +537,10 @@ class ObjectDetector:
         
         frame_copy = frame.copy()
         
-        for detection in self.current_detections:
+        # Filter detections for interview relevance and confidence
+        filtered_detections = self._filter_interview_relevant_detections(self.current_detections)
+        
+        for detection in filtered_detections:
             x1, y1, x2, y2 = detection['bbox']
             confidence = detection['confidence']
             class_name = detection['class_name']
@@ -551,16 +554,19 @@ class ObjectDetector:
                     thickness = max(thickness, 3)  # Thicker border for main person
                 else:
                     color = (0, 255, 255)  # Yellow for other persons
+            elif class_name == 'object':
+                color = (128, 128, 128)  # Gray for generic objects
             else:
                 color = self._get_class_color(class_name)
             
             # Draw bounding box
             cv2.rectangle(frame_copy, (x1, y1), (x2, y2), color, thickness)
             
-            # Prepare label
+            # Prepare label with proper formatting
             label_parts = []
             if show_class:
-                label_parts.append(class_name)
+                display_name = self._format_object_name(class_name)
+                label_parts.append(display_name)
             if show_confidence:
                 label_parts.append(f"{confidence:.2f}")
             
@@ -581,6 +587,78 @@ class ObjectDetector:
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         
         return frame_copy
+    
+    def _filter_interview_relevant_detections(self, detections: list) -> list:
+        """
+        Filter detections for interview relevance and confidence.
+        
+        Args:
+            detections: List of detection dictionaries
+            
+        Returns:
+            Filtered list of detections with confidence-based labeling
+        """
+        # Define strict interview-relevant objects
+        interview_relevant_classes = [
+            'person', 'laptop', 'cell phone', 'keyboard', 'mouse', 
+            'book', 'chair', 'dining table', 'bottle', 'cup'
+        ]
+        
+        filtered_detections = []
+        
+        for detection in detections:
+            class_name = detection['class_name'].lower()
+            confidence = detection['confidence']
+            
+            # Skip very low confidence detections
+            if confidence < 0.5:
+                continue
+            
+            # Create a copy of the detection to modify
+            filtered_detection = detection.copy()
+            
+            # High confidence + interview relevant = show specific name
+            if confidence >= 0.8 and class_name in interview_relevant_classes:
+                # Keep original class name
+                pass
+            # Medium confidence or not in strict list = show as "Object"
+            elif confidence >= 0.5:
+                # Change to generic object
+                filtered_detection['class_name'] = 'object'
+                filtered_detection['original_class'] = class_name
+            
+            filtered_detections.append(filtered_detection)
+        
+        return filtered_detections
+    
+    def _format_object_name(self, class_name: str) -> str:
+        """
+        Format object names for display in camera window.
+        
+        Args:
+            class_name: Original class name
+            
+        Returns:
+            Formatted display name
+        """
+        if class_name == 'object':
+            return 'Object'
+        
+        # Format interview-relevant objects
+        name_map = {
+            'person': 'Person',
+            'cell phone': 'Phone',
+            'laptop': 'Laptop',
+            'keyboard': 'Keyboard',
+            'mouse': 'Mouse',
+            'book': 'Book',
+            'chair': 'Chair',
+            'dining table': 'Table',
+            'bottle': 'Bottle',
+            'cup': 'Cup'
+        }
+        
+        return name_map.get(class_name, class_name.title())
     
     def _is_same_person(self, detection: Dict[str, Any], tracked_person: Dict[str, Any]) -> bool:
         """Check if a detection matches a tracked person."""
