@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,24 +15,38 @@
             display: inline-block;
             margin-right: 8px;
         }
-        .status-running { background-color: #28a745; }
-        .status-waiting { background-color: #ffc107; }
-        .status-error { background-color: #dc3545; }
+
+        .status-running {
+            background-color: #28a745;
+        }
+
+        .status-waiting {
+            background-color: #ffc107;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
         .data-card {
             transition: all 0.3s ease;
         }
+
         .data-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
         .metric-value {
             font-size: 2rem;
             font-weight: bold;
         }
+
         .metric-label {
             font-size: 0.9rem;
             color: #6c757d;
         }
+
         .calibration-panel {
             background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
@@ -39,13 +54,15 @@
             padding: 15px;
             margin-top: 15px;
         }
+
         .calibration-progress {
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             height: 8px;
             overflow: hidden;
             margin: 10px 0;
         }
+
         .calibration-progress-bar {
             background-color: #28a745;
             height: 100%;
@@ -185,7 +202,8 @@
             <div class="col-8">
                 <div class="card">
                     <div class="card-header">
-                        <h6><i class="fas fa-code"></i> Raw Data <small class="text-muted">(Last Update: <span id="last-update">Never</span>)</small></h6>
+                        <h6><i class="fas fa-code"></i> Raw Data <small class="text-muted">(Last Update: <span
+                                    id="last-update">Never</span>)</small></h6>
                     </div>
                     <div class="card-body">
                         <pre id="raw-data" class="small text-muted">No data available</pre>
@@ -201,7 +219,8 @@
                         <!-- Calibration Panel -->
                         <div class="calibration-panel" id="calibration-panel" style="display: block;">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <small><i class="fas fa-cog fa-spin" id="calibration-icon"></i> <span id="calibration-label">Calibrating</span></small>
+                                <small><i class="fas fa-cog fa-spin" id="calibration-icon"></i> <span
+                                        id="calibration-label">Calibrating</span></small>
                                 <small id="calibration-timer">10.0s</small>
                             </div>
                             <div class="calibration-progress">
@@ -209,41 +228,49 @@
                             </div>
                             <small id="calibration-status">Establishing baseline...</small>
                         </div>
-                        
+
                         <!-- Calibrated Values Summary -->
-                        <div class="calibrated-values" id="calibrated-values" style="display: block !important; margin-top: 15px; padding: 15px; background: #28a745 !important; border: 3px solid #20c997 !important; border-radius: 8px; color: white !important;">
+                        <div class="calibrated-values" id="calibrated-values"
+                            style="display: block !important; margin-top: 15px; padding: 15px; background: #28a745 !important; border: 3px solid #20c997 !important; border-radius: 8px; color: white !important;">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="mb-0" style="color: white !important;"><i class="fas fa-chart-line"></i> Calibrated Values</h6>
-                                <button class="btn btn-sm btn-light" onclick="window.dashboard.testCalibratedValues()">Refresh Values</button>
+                                <h6 class="mb-0" style="color: white !important;"><i class="fas fa-chart-line"></i>
+                                    Calibrated Values</h6>
+                                <button class="btn btn-sm btn-light"
+                                    onclick="window.dashboard.testCalibratedValues()">Refresh Values</button>
                             </div>
                             <div class="row">
                                 <div class="col-6">
                                     <div class="calibrated-metric">
                                         <small style="color: #e8f5e8;">Blink Rate</small>
-                                        <div id="calibrated-blink-rate" class="calibrated-value" style="color: white; font-weight: bold;">15 blinks/min</div>
+                                        <div id="calibrated-blink-rate" class="calibrated-value"
+                                            style="color: white; font-weight: bold;">15 blinks/min</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="calibrated-metric">
                                         <small style="color: #e8f5e8;">Sentiment</small>
-                                        <div id="calibrated-sentiment" class="calibrated-value" style="color: white; font-weight: bold;">0.75 (+12%)</div>
+                                        <div id="calibrated-sentiment" class="calibrated-value"
+                                            style="color: white; font-weight: bold;">0.75 (+12%)</div>
                                     </div>
                                 </div>
                                 <div class="col-6 mt-2">
                                     <div class="calibrated-metric">
                                         <small style="color: #e8f5e8;">Emotion</small>
-                                        <div id="calibrated-emotion" class="calibrated-value" style="color: white; font-weight: bold;">Happy</div>
+                                        <div id="calibrated-emotion" class="calibrated-value"
+                                            style="color: white; font-weight: bold;">Happy</div>
                                     </div>
                                 </div>
                                 <div class="col-6 mt-2">
                                     <div class="calibrated-metric">
                                         <small style="color: #e8f5e8;">Confidence</small>
-                                        <div id="calibrated-attention" class="calibrated-value" style="color: white; font-weight: bold;">0.89 (+5%)</div>
+                                        <div id="calibrated-attention" class="calibrated-value"
+                                            style="color: white; font-weight: bold;">0.89 (+5%)</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="mt-2">
-                                <small id="calibrated-debug-info" style="color: #e8f5e8;">Debug: HARDCODED TEST VALUES - If you see this, HTML works!</small>
+                                <small id="calibrated-debug-info" style="color: #e8f5e8;">Debug: HARDCODED TEST VALUES -
+                                    If you see this, HTML works!</small>
                             </div>
                         </div>
                     </div>
@@ -251,60 +278,7 @@
             </div>
         </div>
 
-        <!-- Scene Detection Panel -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card bg-dark text-white">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-eye"></i> 🔴 SCENE DETECTION TEST 🔴</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-success" role="alert">
-                            <strong>SCENE DETECTION PANEL:</strong> If you see this, the changes worked!
-                        </div>
-                        <!-- Detection Controls -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="detectionApiUrl" class="form-label">Vision API URL:</label>
-                                <input type="text" class="form-control" id="detectionApiUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="detectionInterval" class="form-label">Detection Interval:</label>
-                                <select class="form-select" id="detectionInterval">
-                                    <option value="2000">2 seconds</option>
-                                    <option value="5000" selected>5 seconds</option>
-                                    <option value="10000">10 seconds</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">&nbsp;</label>
-                                <div>
-                                    <button class="btn btn-success" id="detectionStartBtn">
-                                        <i class="fas fa-play"></i> Start Detection
-                                    </button>
-                                    <button class="btn btn-danger d-none" id="detectionStopBtn">
-                                        <i class="fas fa-stop"></i> Stop Detection
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Detection Results -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h6><i class="fas fa-search"></i> What I See:</h6>
-                                <div class="bg-secondary p-3 rounded" style="min-height: 100px; max-height: 200px; overflow-y: auto;">
-                                    <div id="detectionResults" class="text-light">
-                                        <small class="text-muted">Start detection to see what objects are in view...</small>
-                                    </div>
-                                </div>
-                                <small id="detectionStatus" class="text-muted mt-2">Detection inactive</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -328,8 +302,8 @@
                     const hours = Math.floor(elapsed / 3600000);
                     const minutes = Math.floor((elapsed % 3600000) / 60000);
                     const seconds = Math.floor((elapsed % 60000) / 1000);
-                    
-                    document.getElementById('session-time').textContent = 
+
+                    document.getElementById('session-time').textContent =
                         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }, 1000);
             }
@@ -338,7 +312,7 @@
                 this.updateInterval = setInterval(() => {
                     this.fetchData();
                 }, 1000); // Poll every second
-                
+
                 // Initial fetch
                 this.fetchData();
             }
@@ -367,7 +341,7 @@
                     document.getElementById('total-blinks').textContent = data.video.total_blinks || 0;
                     document.getElementById('fatigue-level').textContent = data.video.fatigue_level || 'Normal';
                     document.getElementById('video-fps').textContent = Math.round(data.video.fps || 0);
-                    
+
                     // Show calibrated values if available
                     if (data.video.blink_rate_calibrated) {
                         const calibrated = data.video.blink_rate_calibrated;
@@ -383,7 +357,7 @@
                     document.getElementById('transcription').textContent = transcription;
                     document.getElementById('audio-emotion').textContent = data.audio.emotion || 'neutral';
                     document.getElementById('sentiment-score').textContent = (data.audio.sentiment || 0).toFixed(1);
-                    
+
                     // Show calibrated sentiment if available
                     if (data.audio.sentiment_calibrated) {
                         const calibrated = data.audio.sentiment_calibrated;
@@ -399,8 +373,8 @@
                     const hours = Math.floor(duration / 3600);
                     const minutes = Math.floor((duration % 3600) / 60);
                     const seconds = Math.floor(duration % 60);
-                    
-                    document.getElementById('session-duration').textContent = 
+
+                    document.getElementById('session-duration').textContent =
                         `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
 
@@ -422,9 +396,9 @@
                 const icon = document.getElementById('calibration-icon');
                 const label = document.getElementById('calibration-label');
                 const calibratedValues = document.getElementById('calibrated-values');
-                
+
                 console.log('Calibration data:', calibrationData); // Debug log
-                
+
                 if (calibrationData.is_calibrating) {
                     panel.style.display = 'block';
                     panel.style.background = 'linear-gradient(135deg, #007bff, #0056b3)';
@@ -445,10 +419,10 @@
                     icon.className = 'fas fa-check';
                     icon.style.display = 'inline-block';
                     label.textContent = 'Calibrated';
-                    
+
                     console.log('Calibration complete - showing calibrated values section');
                     calibratedValues.style.display = 'block';
-                    
+
                     // Update calibrated values from the latest data
                     console.log('Calling updateCalibratedValuesDisplay...');
                     this.updateCalibratedValuesDisplay();
@@ -471,14 +445,14 @@
                 const currentData = this.latestData;
                 console.log('=== CALIBRATED VALUES UPDATE ===');
                 console.log('updateCalibratedValuesDisplay called with data:', currentData);
-                
+
                 // Always show the calibrated values section
                 const calibratedSection = document.getElementById('calibrated-values');
                 if (calibratedSection) {
                     calibratedSection.style.display = 'block';
                     console.log('Forced calibrated values section to be visible');
                 }
-                
+
                 if (!currentData) {
                     console.log('No current data available - showing placeholder values');
                     document.getElementById('calibrated-blink-rate').innerHTML = 'No Data';
@@ -488,9 +462,9 @@
                     document.getElementById('calibrated-debug-info').textContent = 'Debug: No data received';
                     return;
                 }
-                
+
                 let updateCount = 0;
-                
+
                 // Update blink rate (check if available)
                 if (currentData.video && currentData.video.blink_rate_calibrated) {
                     const blinkCal = currentData.video.blink_rate_calibrated;
@@ -506,7 +480,7 @@
                     console.log('Setting blink rate (no calibration) to:', displayValue);
                     document.getElementById('calibrated-blink-rate').innerHTML = displayValue;
                 }
-                
+
                 // Update sentiment (this exists)
                 if (currentData.audio && currentData.audio.sentiment_calibrated) {
                     const sentCal = currentData.audio.sentiment_calibrated;
@@ -521,7 +495,7 @@
                     console.log('No sentiment calibrated data found - showing raw:', displayValue);
                     document.getElementById('calibrated-sentiment').innerHTML = displayValue;
                 }
-                
+
                 // Update emotion (this exists)
                 if (currentData.video && currentData.video.emotion_calibrated) {
                     const emotCal = currentData.video.emotion_calibrated;
@@ -538,13 +512,13 @@
                     document.getElementById('calibrated-emotion').innerHTML = displayValue;
                     updateCount++;
                 } else {
-                    const rawEmotion = (currentData.video && currentData.video.emotion) || 
-                                     (currentData.audio && currentData.audio.emotion) || 'neutral';
+                    const rawEmotion = (currentData.video && currentData.video.emotion) ||
+                        (currentData.audio && currentData.audio.emotion) || 'neutral';
                     const displayValue = `${rawEmotion} <small>(Raw)</small>`;
                     console.log('No emotion calibrated data found - showing raw:', displayValue);
                     document.getElementById('calibrated-emotion').innerHTML = displayValue;
                 }
-                
+
                 // Update confidence (use audio confidence instead of attention)
                 if (currentData.audio && currentData.audio.confidence_calibrated) {
                     const confCal = currentData.audio.confidence_calibrated;
@@ -559,7 +533,7 @@
                     console.log('No confidence calibrated data found - showing raw:', displayValue);
                     document.getElementById('calibrated-attention').innerHTML = displayValue;
                 }
-                
+
                 // Update debug info
                 const debugInfo = document.getElementById('calibrated-debug-info');
                 const timestamp = new Date().toLocaleTimeString();
@@ -571,12 +545,12 @@
                 const statusElement = document.getElementById('connection-status');
                 const alertElement = document.getElementById('status-alert');
                 const messageElement = document.getElementById('status-message');
-                
+
                 const indicator = statusElement.querySelector('.status-indicator');
                 indicator.className = `status-indicator status-${status}`;
-                
+
                 statusElement.innerHTML = `<span class="status-indicator status-${status}"></span> ${status === 'running' ? 'Connected' : status === 'waiting' ? 'Waiting' : 'Error'}`;
-                
+
                 messageElement.textContent = message;
                 alertElement.className = `alert alert-${status === 'running' ? 'success' : status === 'waiting' ? 'warning' : 'danger'}`;
             }
@@ -590,7 +564,7 @@
         // Initialize dashboard when page loads
         document.addEventListener('DOMContentLoaded', () => {
             window.dashboard = new MinimalDashboard();
-            
+
             // Start periodic calibrated values updater
             setInterval(() => {
                 if (window.dashboard && window.dashboard.latestData) {
@@ -598,7 +572,7 @@
                     window.dashboard.updateCalibratedValuesDisplay();
                 }
             }, 3000); // Update every 3 seconds
-            
+
             // Data logging for debugging
             setInterval(() => {
                 if (window.dashboard && window.dashboard.latestData) {
@@ -618,4 +592,5 @@
         });
     </script>
 </body>
+
 </html>
