@@ -862,13 +862,24 @@ function ChatInterfaceComponent() {
             {messages.map(renderMessage)}
             {isProcessing && (
               <div className="message processing-message">
-                <div className="message-content">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                <div className="message-wrapper">
+                  <div className="avatar-container">
+                    <PulsatingAvatar 
+                      size={40} 
+                      isActive={true}
+                      emotion={behavioralData.currentState?.emotion || 'neutral'}
+                    />
                   </div>
-                  Processing...
+                  <div className="message-content-wrapper">
+                    <div className="message-content">
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      Processing...
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
