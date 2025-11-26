@@ -90,14 +90,27 @@ export class AgentRegistry {
           result = await this.getBehavioralContext(sessionId, windowSeconds);
           console.log("📊 get_behavioral_context result:", result);
           
-          // Track emotion in journey
+          // Track emotion in journey - record every time we get behavioral context
           if (result.data?.emotion) {
-            this.emotionalJourney.push({
-              timestamp: Date.now(),
-              emotion: result.data.emotion,
-              intensity: this.getEmotionIntensity(result.data),
-              trigger: context.userInput?.substring(0, 50)
-            });
+            // Only add if it's different from last entry or if it's been more than 3 seconds
+            const lastEntry = this.emotionalJourney[this.emotionalJourney.length - 1];
+            const shouldRecord = !lastEntry || 
+                                lastEntry.emotion !== result.data.emotion ||
+                                (Date.now() - lastEntry.timestamp) > 3000;
+            
+            if (shouldRecord) {
+              this.emotionalJourney.push({
+                timestamp: Date.now(),
+                emotion: result.data.emotion,
+                intensity: this.getEmotionIntensity(result.data),
+                trigger: context.userInput?.substring(0, 50)
+              });
+              
+              // Keep only last 100 entries
+              if (this.emotionalJourney.length > 100) {
+                this.emotionalJourney = this.emotionalJourney.slice(-100);
+              }
+            }
           }
           break;
 
@@ -261,10 +274,12 @@ export class AgentRegistry {
       const journey = this.emotionalJourney;
       const trends = apiData?.recent_trends || {};
 
-      // Analyze emotional patterns
-      const dominantEmotion = this.getDominantEmotion(journey);
-      const emotionalVariability = this.calculateEmotionalVariability(journey);
-      const emotionalArc = this.determineEmotionalArc(journey);
+      // If we don't have enough local data, try to build from API data
+      if (journey.length < 3 && apiData?.recent_trends) {
+        // Use API trends to provide some analysis even with limited data
+        const dominantEmotion = trends.dominant_emotion || journey[0]?.emotion || 'neutral';
+        const emotionalVariability = journey.length >= 2 ? this.calculateEmotionalVariability(journey) : 'Insufficient data';
+        const emotionalArc = journey.length >= 2 ? this.determineEmotionalArc(journey) : 'Not enough data';
 
       let message = this.currentLanguage === 'en'
         ? `**Your Emotional Journey Analysis:**\n\n`

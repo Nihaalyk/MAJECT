@@ -85,12 +85,12 @@ export const BehavioralContextProvider: React.FC<{
 
   const emotionalMemoryRef = useRef<EmotionalMemoryEntry[]>([]);
 
-  const recordEmotionalMoment = useCallback((emotion: string, trigger?: string) => {
+  const recordEmotionalMoment = useCallback((emotion: string, trigger?: string, sentiment?: number, intensity?: string) => {
     const entry: EmotionalMemoryEntry = {
       timestamp: Date.now(),
       emotion,
-      sentiment: behavioralData.currentState.sentiment,
-      intensity: behavioralData.currentState.emotionalIntensity || 'moderate',
+      sentiment: sentiment !== undefined ? sentiment : behavioralData.currentState.sentiment,
+      intensity: intensity || behavioralData.currentState.emotionalIntensity || 'moderate',
       trigger
     };
     
@@ -163,10 +163,18 @@ export const BehavioralContextProvider: React.FC<{
       
       const currentEmotion = data.current_state?.emotion || 'neutral';
       const previousEmotion = behavioralData.currentState.emotion;
+      const currentSentiment = data.current_state?.sentiment || 0;
+      const currentIntensity = data.current_state?.emotional_intensity || data.emotional_intelligence?.emotional_intensity || 'moderate';
       
-      // Record emotional change
-      if (currentEmotion !== previousEmotion && previousEmotion !== 'neutral') {
-        recordEmotionalMoment(currentEmotion);
+      // Record emotional moment more frequently (every time we get new data, not just on change)
+      // This builds up the emotional journey faster
+      const timeSinceLastRecord = emotionalMemoryRef.current.length > 0
+        ? Date.now() - emotionalMemoryRef.current[emotionalMemoryRef.current.length - 1].timestamp
+        : Infinity;
+      
+      // Record if emotion changed OR if it's been more than 5 seconds since last record
+      if (currentEmotion !== previousEmotion || timeSinceLastRecord > 5000) {
+        recordEmotionalMoment(currentEmotion, undefined, currentSentiment, currentIntensity);
       }
       
       const emotionalTrend = calculateEmotionalTrend(emotionalMemoryRef.current);
