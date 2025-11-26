@@ -4,7 +4,6 @@
  */
 
 import { MainAgent } from "./main-agent/MainAgent";
-import { FAQAgent } from "./faq-agent";
 import { ConversationMemory } from "../contexts/ConversationMemoryContext";
 
 import { ToolResponseData } from "../types/chat";
@@ -36,7 +35,6 @@ interface EmotionalMemory {
 
 export class AgentRegistry {
   private mainAgent: MainAgent;
-  private faqAgent: FAQAgent;
   private memory: ConversationMemory;
   private currentLanguage: 'en' | 'kn';
   private behavioralContext: string = '';
@@ -51,11 +49,6 @@ export class AgentRegistry {
     this.fusionApiUrl = envUrl || 'http://localhost:8083';
 
     this.mainAgent = new MainAgent({ language, memory, behavioralContext: this.behavioralContext });
-    this.faqAgent = new FAQAgent({
-      language,
-      memory,
-      getContextualInfo: getContextualInfo || (() => ({}))
-    });
   }
 
   getFunctionDeclarations(): any[] {
@@ -77,10 +70,6 @@ export class AgentRegistry {
       let result: any = null;
 
       switch (name) {
-        case "handle_faq_inquiry":
-          result = await this.faqAgent.processInquiry(args.question, args.context);
-          break;
-          
         case "switch_language_mode":
           result = {
             success: true,
@@ -722,7 +711,6 @@ export class AgentRegistry {
 
   private getAgentName(functionName: string): string {
     const names: Record<string, string> = {
-      "handle_faq_inquiry": "FAQ Agent",
       "switch_language_mode": "Language Switcher",
       "get_behavioral_context": "Emotional Intelligence",
       "analyze_emotional_journey": "Emotional Journey Analyzer",
@@ -747,11 +735,6 @@ export class AgentRegistry {
     if (this.currentLanguage !== language) {
       this.currentLanguage = language;
       this.mainAgent = new MainAgent({ language, memory: this.memory, behavioralContext: this.behavioralContext });
-      this.faqAgent = new FAQAgent({
-        language,
-        memory: this.memory,
-        getContextualInfo: getContextualInfo || (() => ({}))
-      });
     }
   }
 

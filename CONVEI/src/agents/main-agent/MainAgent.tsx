@@ -394,26 +394,6 @@ ${this.config.behavioralContext || ''}
         },
       },
       {
-        name: "handle_faq_inquiry",
-        description: language === "en"
-          ? "Search knowledge base for specific information when needed."
-          : "Cari pangkalan pengetahuan untuk maklumat khusus.",
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            question: {
-              type: Type.STRING,
-              description: "The user's question or inquiry.",
-            },
-            context: {
-              type: Type.STRING,
-              description: "Additional context about the inquiry.",
-            },
-          },
-          required: ["question"],
-        },
-      },
-      {
         name: "switch_language_mode",
         description: language === "en"
           ? "Switch between English and Kannada language modes."

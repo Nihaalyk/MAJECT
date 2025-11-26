@@ -14,7 +14,6 @@ import {
   Modality,
   Type,
 } from "@google/genai";
-import { searchFAQ } from "../../lib/generic-services";
 import "./CustomerServiceAgent.scss";
 
 // Function declarations will be created dynamically based on language
@@ -27,33 +26,6 @@ function CustomerServiceAgentComponent() {
   const [currentAgent, setCurrentAgent] = useState<string>(t("main_agent"));
 
   useEffect(() => {
-    // Create function declarations based on current language
-    const faqAgentDeclaration: FunctionDeclaration = {
-      name: "handle_faq_inquiry",
-        description: language === "en"
-        ? "OPTIONAL tool: Search the knowledge base for specific information. Only use this when you need to look up specific facts or details from the FAQ database. For general conversation or questions you can answer naturally, respond directly without using this tool."
-        : "Alat PILIHAN: Cari pangkalan pengetahuan untuk maklumat khusus. Gunakan ini hanya apabila anda perlu mencari fakta atau butiran khusus dari pangkalan data FAQ. Untuk perbualan umum atau soalan yang anda boleh jawab secara semula jadi, respons terus tanpa menggunakan alat ini.",
-      parameters: {
-        type: Type.OBJECT,
-        properties: {
-          question: {
-            type: Type.STRING,
-            description: language === "en"
-              ? "The user's question or inquiry."
-              : "Pertanyaan atau pertanyaan pengguna.",
-          },
-          context: {
-            type: Type.STRING,
-            description: language === "en" 
-              ? "Additional context about the user's inquiry."
-              : "Konteks tambahan tentang pertanyaan pengguna.",
-          },
-        },
-        required: ["question"],
-      },
-    };
-
-
     setModel("models/gemini-live-2.5-flash-preview");
     
     setConfig({
@@ -70,9 +42,7 @@ function CustomerServiceAgentComponent() {
           },
         ],
       },
-      tools: [
-        { functionDeclarations: [faqAgentDeclaration] },
-      ],
+      tools: [],
     });
   }, [setConfig, setModel, language, t]);
 
@@ -87,42 +57,15 @@ function CustomerServiceAgentComponent() {
         response: { output: any };
       }[] = [];
 
-      for (const fc of functionCalls) {
-        if (fc.name === "handle_faq_inquiry") {
-          console.log("Routing to FAQ Agent:", fc.args);
-          setCurrentAgent(t("faq_agent"));
-          
-          const { question } = fc.args as any;
-          
-          // Enhanced FAQ search using the service
-          const matchingFAQs = searchFAQ(question, language);
-          
-          const response = matchingFAQs.length > 0
-            ? { 
-                answer: matchingFAQs[0].answer, 
-                source: "FAQ Database",
-                category: matchingFAQs[0].category,
-                related_questions: matchingFAQs.slice(1, 3).map(faq => faq.question)
-              }
-            : { 
-                answer: t("faq_not_found"), 
-                source: "General Response" 
-              };
+      // FAQ agent removed - no tool handlers
 
-          functionResponses.push({
-            id: fc.id ?? "",
-            name: fc.name ?? "",
-            response: { output: response },
-          });
-        }
-
+      // Send empty response if needed
+      if (functionResponses.length > 0) {
+        setTimeout(() => {
+          client.sendToolResponse({ functionResponses });
+          setCurrentAgent(t("main_agent"));
+        }, 200);
       }
-
-      // Send response back to main agent
-      setTimeout(() => {
-        client.sendToolResponse({ functionResponses });
-        setCurrentAgent(t("main_agent"));
-      }, 200);
     };
 
     client.on("toolcall", onToolCall);
@@ -149,7 +92,7 @@ function CustomerServiceAgentComponent() {
               className={`lang-btn ${language === "kn" ? "active" : ""}`}
               onClick={() => setLanguage("kn")}
             >
-              MS
+              KN
             </button>
           </div>
           <button
