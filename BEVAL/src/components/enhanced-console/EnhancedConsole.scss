@@ -1,0 +1,424 @@
+.enhanced-console {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-primary);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition-normal);
+  z-index: 1000;
+  box-shadow: var(--shadow-tertiary);
+
+  &.closed {
+    width: 60px;
+  }
+
+  &.open {
+    min-width: 400px;
+    max-width: 70vw;
+  }
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  min-height: var(--header-height);
+  flex-shrink: 0;
+}
+
+.console-header-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  min-height: var(--header-height);
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.console-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  .console-icon {
+    color: var(--primary-600);
+    flex-shrink: 0;
+  }
+
+  .console-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.console-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  .toggle-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.875rem;
+
+    svg {
+      color: var(--text-secondary);
+      transition: color var(--transition-fast);
+    }
+
+    &:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--border-secondary);
+
+      svg {
+        color: var(--text-primary);
+      }
+    }
+  }
+}
+
+.connection-status {
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    svg {
+      flex-shrink: 0;
+      color: var(--text-secondary);
+    }
+
+    &.connected svg {
+      color: var(--success-500);
+    }
+
+    &.disconnected svg {
+      color: var(--error-500);
+    }
+
+    .status-text {
+      color: var(--text-secondary);
+    }
+  }
+}
+
+.console-tabs {
+  display: flex;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  overflow-x: auto;
+
+  .tab-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: fit-content;
+
+    &:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    &.active {
+      color: var(--primary-600);
+      border-bottom-color: var(--primary-500);
+      background: var(--bg-primary);
+    }
+
+    // Different colors for different operations
+    &[data-tab="conversations"] {
+      &.active {
+        color: var(--primary-600);
+        border-bottom-color: var(--primary-500);
+        
+        .tab-icon {
+          color: var(--primary-600);
+        }
+      }
+      
+      &:hover .tab-icon {
+        color: var(--primary-500);
+      }
+    }
+
+    &[data-tab="logs"] {
+      &.active {
+        color: var(--success-600);
+        border-bottom-color: var(--success-500);
+        
+        .tab-icon {
+          color: var(--success-600);
+        }
+      }
+      
+      &:hover .tab-icon {
+        color: var(--success-500);
+      }
+    }
+
+    &[data-tab="tools"] {
+      &.active {
+        color: var(--warning-600);
+        border-bottom-color: var(--warning-500);
+        
+        .tab-icon {
+          color: var(--warning-600);
+        }
+      }
+      
+      &:hover .tab-icon {
+        color: var(--warning-500);
+      }
+    }
+
+    &[data-tab="flow"] {
+      &.active {
+        color: var(--error-600);
+        border-bottom-color: var(--error-500);
+        
+        .tab-icon {
+          color: var(--error-600);
+        }
+      }
+      
+      &:hover .tab-icon {
+        color: var(--error-500);
+      }
+    }
+
+    .tab-icon {
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+      transition: color var(--transition-fast);
+    }
+
+    .tab-label {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.console-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  position: relative;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: var(--radius-sm);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+  }
+}
+
+.console-input {
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
+
+  .input-container {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    transition: border-color var(--transition-fast);
+
+    &:focus-within {
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 2px var(--primary-200);
+    }
+  }
+
+  .input-field {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-family-primary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    resize: none;
+    min-height: 1.5rem;
+    max-height: 6rem;
+    overflow-y: auto;
+
+    &::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .send-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: var(--primary-500);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--neutral-0);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+
+    &:hover:not(:disabled) {
+      background: var(--primary-600);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    svg {
+      flex-shrink: 0;
+      color: var(--neutral-0);
+    }
+
+    &:disabled svg {
+      color: var(--text-tertiary);
+    }
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 10;
+
+  &:hover {
+    background: var(--primary-500);
+  }
+
+  &:active {
+    background: var(--primary-600);
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .enhanced-console {
+    &.open {
+      width: 100vw !important;
+      max-width: 100vw;
+    }
+  }
+
+  .console-header {
+    padding: var(--space-3) var(--space-4);
+
+    .console-title .console-text {
+      font-size: 1rem;
+    }
+  }
+
+  .console-tabs {
+    .tab-button {
+      padding: var(--space-2) var(--space-3);
+      
+      .tab-label {
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .console-input {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+// Animation for smooth transitions
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.enhanced-console.open {
+  animation: slideIn var(--transition-normal) ease-out;
+}
+
+.enhanced-console.closed {
+  animation: slideOut var(--transition-normal) ease-out;
+}

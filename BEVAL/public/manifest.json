@@ -1,0 +1,19 @@
+{
+  "short_name": "CES",
+  "name": "Customer Engagement System",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "en-US",
+  "description": "AI-powered customer engagement system for intelligent conversation and service assistance."
+}

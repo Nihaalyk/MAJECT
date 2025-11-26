@@ -1,0 +1,404 @@
+.conversation-display {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+
+  .conversation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-6);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .conversation-stats {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      background: var(--bg-primary);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-primary);
+      font-weight: 500;
+    }
+  }
+
+  .conversation-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-tertiary);
+
+      .empty-text {
+        font-size: 1rem;
+        text-align: center;
+        font-weight: 400;
+      }
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-primary);
+      border: 1px solid var(--border-primary);
+
+      .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2) var(--space-3);
+        font-size: 0.75rem;
+        font-weight: 500;
+
+        .message-type {
+          display: flex;
+          align-items: center;
+          gap: var(--space-1);
+        }
+
+        .message-time {
+          color: var(--text-tertiary);
+          font-size: 0.7rem;
+        }
+      }
+
+      .message-content {
+        padding: var(--space-3);
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      // User messages
+      &.user-message {
+        background: var(--primary-500);
+        border-left: 3px solid var(--primary-400);
+        color: var(--neutral-0);
+
+        .message-header {
+          background: var(--primary-600);
+          color: var(--neutral-0);
+        }
+
+        .message-content {
+          color: var(--neutral-0);
+        }
+      }
+
+      // Assistant messages
+      &.assistant-message {
+        background: var(--bg-secondary);
+        border-left: 3px solid var(--border-secondary);
+        color: var(--text-primary);
+
+        .message-header {
+          background: var(--bg-tertiary);
+          color: var(--text-secondary);
+        }
+
+        .message-content {
+          color: var(--text-primary);
+        }
+      }
+
+      // Transcription messages
+      &.transcription-message {
+        background: var(--bg-secondary);
+        border-left: 4px solid var(--primary-500);
+        color: var(--text-primary);
+        box-shadow: 0 2px 12px rgba(59, 130, 246, 0.25);
+
+        .message-header {
+          background: var(--primary-600);
+          color: var(--neutral-0);
+          font-weight: 600;
+          letter-spacing: 0.02em;
+
+          .transcription-icon {
+            flex-shrink: 0;
+          }
+
+          .message-type {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+          }
+        }
+
+        .message-content {
+          color: var(--text-primary);
+          font-style: italic;
+          position: relative;
+          padding-left: var(--space-5);
+
+          &::before {
+            content: '"';
+            position: absolute;
+            left: var(--space-2);
+            top: 0;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-500);
+            line-height: 1;
+            opacity: 0.3;
+          }
+        }
+      }
+
+      // Tool call messages
+      &.tool-call-message {
+        background: var(--warning-500);
+        border-left: 3px solid var(--warning-400);
+        color: var(--neutral-0);
+
+        .message-header {
+          background: var(--warning-600);
+          color: var(--neutral-0);
+        }
+
+        .message-content {
+          color: var(--neutral-0);
+        }
+
+        .tool-call-info {
+            .function-call-details {
+              margin-top: var(--space-2);
+              padding: var(--space-3);
+              background: var(--bg-primary);
+              border: 1px solid var(--border-primary);
+              border-radius: var(--radius-md);
+
+              .function-name {
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: var(--space-2);
+              }
+
+            .function-args {
+              display: flex;
+              flex-direction: column;
+              gap: var(--space-2);
+
+              .arg-item {
+                display: flex;
+                gap: var(--space-3);
+                font-size: 0.875rem;
+
+                .arg-key {
+                  font-weight: 500;
+                  color: var(--text-secondary);
+                  min-width: 80px;
+                }
+
+                .arg-value {
+                  color: var(--text-primary);
+                  font-weight: 400;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Rate calculation messages
+      &.rate-calculation-message {
+        background: var(--success-500);
+        border-left: 3px solid var(--success-400);
+        color: var(--neutral-0);
+
+        .message-header {
+          background: var(--success-600);
+          color: var(--neutral-0);
+        }
+
+        .message-content {
+          color: var(--neutral-0);
+        }
+
+        .rate-calculation-result {
+          .rate-summary {
+            font-weight: 500;
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+            line-height: 1.5;
+          }
+
+          .rate-details {
+              .rate-breakdown {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-3);
+                padding: var(--space-4);
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-lg);
+
+              .rate-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: var(--space-2) 0;
+                border-bottom: 1px solid var(--border-primary);
+
+                &:last-child {
+                  border-bottom: none;
+                }
+
+                .rate-label {
+                  font-weight: 500;
+                  color: var(--text-secondary);
+                }
+
+                .rate-value {
+                  font-weight: 600;
+                  color: var(--text-primary);
+
+                  &.rate-amount {
+                    font-size: 1.125rem;
+                    font-weight: 700;
+                    color: var(--success-600);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // FAQ response messages
+      &.faq-response-message {
+        background: var(--bg-secondary);
+        border-left: 3px solid var(--primary-500);
+        color: var(--text-primary);
+
+        .message-header {
+          background: var(--bg-tertiary);
+          color: var(--text-secondary);
+        }
+
+        .message-content {
+          color: var(--text-primary);
+        }
+
+        .faq-response {
+          .faq-answer {
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+            line-height: 1.6;
+          }
+
+          .faq-meta {
+            display: flex;
+            gap: var(--space-4);
+            font-size: 0.875rem;
+
+            .faq-category {
+              background: var(--bg-tertiary);
+              color: var(--text-secondary);
+              padding: var(--space-1) var(--space-3);
+              border-radius: var(--radius-md);
+              font-weight: 500;
+              border: 1px solid var(--border-primary);
+            }
+
+            .faq-source {
+              color: var(--text-tertiary);
+            }
+          }
+        }
+      }
+
+      // Tool response messages
+      &.tool-response-message {
+        background: var(--success-500);
+        border-left: 3px solid var(--success-400);
+        color: var(--neutral-0);
+
+        .message-header {
+          background: var(--success-600);
+          color: var(--neutral-0);
+        }
+
+        .message-content {
+          color: var(--neutral-0);
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .conversation-display {
+    .conversation-header {
+      padding: var(--space-3) var(--space-4);
+      flex-direction: column;
+      gap: var(--space-2);
+      align-items: flex-start;
+
+      h3 {
+        font-size: 0.9rem;
+      }
+    }
+
+    .conversation-messages {
+      padding: var(--space-3);
+
+      .message {
+        .message-content {
+          padding: var(--space-2);
+          font-size: 0.85rem;
+        }
+
+        &.rate-calculation-message {
+          .rate-details .rate-breakdown {
+            .rate-item {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: var(--space-1);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Scrollbar styling
+.conversation-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-messages::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.conversation-messages::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.conversation-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
