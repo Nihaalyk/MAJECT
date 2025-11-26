@@ -5,7 +5,7 @@
 
 import { createContext, FC, ReactNode, useContext, useState, useCallback, useMemo } from "react";
 
-export type Language = "en" | "ms";
+export type Language = "en" | "kn";
 
 export interface LanguageContextType {
   language: Language;

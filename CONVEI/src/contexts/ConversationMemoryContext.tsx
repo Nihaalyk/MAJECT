@@ -8,7 +8,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 export interface ConversationMemory {
   // User preferences
   userPreferences: {
-    preferredLanguage: 'en' | 'ms';
+    preferredLanguage: 'en' | 'kn';
   };
   
   // Current conversation context
@@ -46,7 +46,7 @@ const ConversationMemoryContext = createContext<ConversationMemoryContextType | 
 
 const initialMemory: ConversationMemory = {
   userPreferences: {
-    preferredLanguage: 'ms',
+    preferredLanguage: 'kn',
   },
   currentContext: {
     lastInquiry: '',

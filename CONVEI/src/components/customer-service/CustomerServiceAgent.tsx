@@ -146,8 +146,8 @@ function CustomerServiceAgentComponent() {
               EN
             </button>
             <button 
-              className={`lang-btn ${language === "ms" ? "active" : ""}`}
-              onClick={() => setLanguage("ms")}
+              className={`lang-btn ${language === "kn" ? "active" : ""}`}
+              onClick={() => setLanguage("kn")}
             >
               MS
             </button>

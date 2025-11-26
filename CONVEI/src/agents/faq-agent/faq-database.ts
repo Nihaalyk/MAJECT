@@ -35,7 +35,7 @@ export const faqDatabase: FAQItem[] = [
 const faqSearchCache = new Map<string, FAQItem[]>();
 
 // FAQ Search Function with caching
-export const searchFAQ = (query: string, language: "en" | "ms" = "ms"): FAQItem[] => {
+export const searchFAQ = (query: string, language: "en" | "kn" = "kn"): FAQItem[] => {
   const cacheKey = `${query.toLowerCase()}-${language}`;
   
   // Check cache first
@@ -56,13 +56,13 @@ export const searchFAQ = (query: string, language: "en" | "ms" = "ms"): FAQItem[
       // Check English keywords
       if (faq.keywords_en && faq.keywords_en.some(keyword => queryLower.includes(keyword.toLowerCase()))) return true;
     } else {
-      // Check Malay question
+      // Check Kannada question
       if (faq.question.toLowerCase().includes(queryLower)) return true;
       
-      // Check Malay answer
+      // Check Kannada answer
       if (faq.answer.toLowerCase().includes(queryLower)) return true;
       
-      // Check Malay keywords
+      // Check Kannada keywords
       if (faq.keywords.some(keyword => queryLower.includes(keyword.toLowerCase()))) return true;
     }
     

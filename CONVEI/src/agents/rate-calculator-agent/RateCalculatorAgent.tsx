@@ -6,7 +6,7 @@ import { calculatePostageRate, RateCalculationParams } from "../../lib/generic-s
 import { ConversationMemory } from "../../contexts/ConversationMemoryContext";
 
 export interface RateCalculatorAgentConfig {
-  language: 'en' | 'ms';
+  language: 'en' | 'kn';
   memory: ConversationMemory;
 }
 

@@ -10,7 +10,7 @@ import { ConversationMemory } from "../contexts/ConversationMemoryContext";
 import { ToolResponseData } from "../types/chat";
 
 export interface AgentContext {
-  language: 'en' | 'ms';
+  language: 'en' | 'kn';
   userInput: string;
   conversationHistory: Array<{ timestamp: Date; userInput: string; agentResponse: string; agentType: string }>;
   memory: ConversationMemory;
@@ -38,12 +38,12 @@ export class AgentRegistry {
   private mainAgent: MainAgent;
   private faqAgent: FAQAgent;
   private memory: ConversationMemory;
-  private currentLanguage: 'en' | 'ms';
+  private currentLanguage: 'en' | 'kn';
   private behavioralContext: string = '';
   private fusionApiUrl: string;
   private emotionalJourney: EmotionalMemory[] = [];
 
-  constructor(memory: ConversationMemory, language: 'en' | 'ms', getContextualInfo?: () => Record<string, unknown>, behavioralContext?: string) {
+  constructor(memory: ConversationMemory, language: 'en' | 'kn', getContextualInfo?: () => Record<string, unknown>, behavioralContext?: string) {
     this.memory = memory;
     this.currentLanguage = language;
     this.behavioralContext = behavioralContext || '';
@@ -86,8 +86,8 @@ export class AgentRegistry {
             success: true,
             data: {
               message: context.language === 'en' 
-                ? `Language mode switched to ${args.target_language === 'en' ? 'English' : 'Malay'}.`
-                : `Mod bahasa ditukar kepada ${args.target_language === 'en' ? 'Bahasa Inggeris' : 'Bahasa Melayu'}.`,
+                ? `Language mode switched to ${args.target_language === 'en' ? 'English' : 'Kannada'}.`
+                : `ಭಾಷಾ ಮೋಡ್ ${args.target_language === 'en' ? 'ಇಂಗ್ಲೀಷ್' : 'ಕನ್ನಡ'}ಗೆ ಬದಲಾಯಿಸಲಾಗಿದೆ.`,
               language_switched: true,
               new_language: args.target_language
             }
@@ -201,7 +201,7 @@ export class AgentRegistry {
 
       const message = this.currentLanguage === 'en'
         ? this.formatEnglishBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation)
-        : this.formatMalayBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation);
+        : this.formatKannadaBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation);
 
       return {
         success: true,
@@ -696,26 +696,26 @@ export class AgentRegistry {
     return msg;
   }
 
-  private formatMalayBehavioralMessage(
+  private formatKannadaBehavioralMessage(
     emotion: string, attention: string, engagement: string,
     sentiment: number, fatigue: string, posture: string,
     movement: string, attentionScore: number, interpretation: string
   ): string {
-    let msg = `**🎭 Analisis Emosi Masa Nyata:**\n\n`;
-    msg += `**Emosi Utama:** ${emotion}\n`;
-    msg += `**Perhatian:** ${attention} (${attentionScore.toFixed(0)}/100)\n`;
-    msg += `**Tahap Penglibatan:** ${engagement}\n`;
+    let msg = `**🎭 ನೈಜ-ಸಮಯದ ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
+    msg += `**ಮುಖ್ಯ ಭಾವನೆ:** ${emotion}\n`;
+    msg += `**ಗಮನ:** ${attention} (${attentionScore.toFixed(0)}/100)\n`;
+    msg += `**ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆಯ ಮಟ್ಟ:** ${engagement}\n`;
     
     if (sentiment !== 0) {
-      const sentimentLabel = sentiment > 0.3 ? 'Positif 😊' : sentiment < -0.3 ? 'Negatif 😔' : 'Neutral 😐';
-      msg += `**Sentimen:** ${sentimentLabel} (${sentiment > 0 ? '+' : ''}${sentiment.toFixed(2)})\n`;
+      const sentimentLabel = sentiment > 0.3 ? 'ಧನಾತ್ಮಕ 😊' : sentiment < -0.3 ? 'ನಕಾರಾತ್ಮಕ 😔' : 'ತಟಸ್ಥ 😐';
+      msg += `**ಭಾವನೆ:** ${sentimentLabel} (${sentiment > 0 ? '+' : ''}${sentiment.toFixed(2)})\n`;
     }
     
     if (fatigue !== 'Normal') {
-      msg += `**Keletihan:** ${fatigue} 😴\n`;
+      msg += `**ಆಯಾಸ:** ${fatigue} 😴\n`;
     }
     
-    msg += `\n**💡 Apa Yang Ini Beritahu Saya:**\n${interpretation}\n`;
+    msg += `\n**💡 ಇದು ನನಗೆ ಏನು ಹೇಳುತ್ತದೆ:**\n${interpretation}\n`;
     
     return msg;
   }
@@ -743,7 +743,7 @@ export class AgentRegistry {
     return this.mainAgent.getServiceOptions();
   }
 
-  updateLanguage(language: 'en' | 'ms', getContextualInfo?: () => Record<string, unknown>): void {
+  updateLanguage(language: 'en' | 'kn', getContextualInfo?: () => Record<string, unknown>): void {
     if (this.currentLanguage !== language) {
       this.currentLanguage = language;
       this.mainAgent = new MainAgent({ language, memory: this.memory, behavioralContext: this.behavioralContext });
@@ -764,7 +764,7 @@ export class AgentRegistry {
     });
   }
 
-  getCurrentLanguage(): 'en' | 'ms' {
+  getCurrentLanguage(): 'en' | 'kn' {
     return this.currentLanguage;
   }
 }

@@ -6,7 +6,7 @@ import { searchFAQ } from "./faq-database";
 import { ConversationMemory } from "../../contexts/ConversationMemoryContext";
 
 export interface FAQAgentConfig {
-  language: 'en' | 'ms';
+  language: 'en' | 'kn';
   memory: ConversationMemory;
   getContextualInfo: () => Record<string, unknown>;
 }

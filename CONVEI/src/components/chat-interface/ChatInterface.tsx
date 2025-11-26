@@ -149,8 +149,8 @@ function ChatInterfaceComponent() {
 
         // Update current agent or handle language switching
         if (name === TOOL_NAMES.LANGUAGE_SWITCH) {
-          const { target_language } = args as { target_language?: 'en' | 'ms' };
-          if (target_language && (target_language === 'en' || target_language === 'ms')) {
+          const { target_language } = args as { target_language?: 'en' | 'kn' };
+          if (target_language && (target_language === 'en' || target_language === 'kn')) {
             setLanguage(target_language);
             setCurrentAgent(t(AGENT_NAMES.MAIN));
           }
@@ -791,12 +791,12 @@ function ChatInterfaceComponent() {
               EN
             </button>
             <button 
-              className={`lang-btn ${language === "ms" ? "active" : ""}`}
-              onClick={() => setLanguage("ms")}
-              aria-pressed={language === "ms"}
-              aria-label="Switch to Malay"
+              className={`lang-btn ${language === "kn" ? "active" : ""}`}
+              onClick={() => setLanguage("kn")}
+              aria-pressed={language === "kn"}
+              aria-label="Switch to Kannada"
             >
-              MS
+              KN
             </button>
           </div>
           <ThemeToggle />
