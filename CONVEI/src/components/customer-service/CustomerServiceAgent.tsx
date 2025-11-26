@@ -31,7 +31,7 @@ function CustomerServiceAgentComponent() {
     setConfig({
       responseModalities: [Modality.AUDIO],
       speechConfig: {
-        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } },
       },
       outputAudioTranscription: {},
       inputAudioTranscription: {},
@@ -78,7 +78,7 @@ function CustomerServiceAgentComponent() {
     <div className="customer-service-agent">
       <div className="agent-header">
         <div className="logo">
-          <span className="logo-text">CES</span>
+          <span className="logo-text">ARIA</span>
         </div>
         <div className="header-controls">
           <div className="language-toggle">

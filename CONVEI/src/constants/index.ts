@@ -4,7 +4,7 @@
 
 // API Configuration
 export const DEFAULT_MODEL = "models/gemini-live-2.5-flash-preview";
-export const DEFAULT_VOICE = "Aoede";
+export const DEFAULT_VOICE = "Kore";
 
 // Tool Response Delay (ms)
 export const TOOL_RESPONSE_DELAY = 200;

@@ -3,12 +3,18 @@
  * Maintains conversation state and memory across the session
  */
 
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 export interface ConversationMemory {
   // User preferences
   userPreferences: {
     preferredLanguage: 'en' | 'kn';
+  };
+  
+  // User profile
+  userProfile: {
+    name: string;
+    nameConfirmed: boolean;
   };
   
   // Current conversation context
@@ -40,6 +46,7 @@ interface ConversationMemoryContextType {
   addConversationEntry: (userInput: string, agentResponse: string, agentType: string) => void;
   getContextualInfo: () => any;
   clearMemory: () => void;
+  setUserName: (name: string) => void;
 }
 
 const ConversationMemoryContext = createContext<ConversationMemoryContextType | undefined>(undefined);
@@ -47,6 +54,10 @@ const ConversationMemoryContext = createContext<ConversationMemoryContextType | 
 const initialMemory: ConversationMemory = {
   userPreferences: {
     preferredLanguage: 'kn',
+  },
+  userProfile: {
+    name: '',
+    nameConfirmed: false,
   },
   currentContext: {
     lastInquiry: '',
@@ -149,6 +160,16 @@ export const ConversationMemoryProvider: React.FC<{ children: ReactNode }> = ({ 
     setMemory(initialMemory);
   }, []);
 
+  const setUserName = useCallback((name: string) => {
+    setMemory(prev => ({
+      ...prev,
+      userProfile: {
+        name: name,
+        nameConfirmed: true,
+      },
+    }));
+  }, []);
+
   return (
     <ConversationMemoryContext.Provider 
       value={{ 
@@ -156,7 +177,8 @@ export const ConversationMemoryProvider: React.FC<{ children: ReactNode }> = ({ 
         updateMemory, 
         addConversationEntry, 
         getContextualInfo, 
-        clearMemory 
+        clearMemory,
+        setUserName
       }}
     >
       {children}

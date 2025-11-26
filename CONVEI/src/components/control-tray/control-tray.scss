@@ -2,28 +2,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-tertiary);
-  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  color: var(--text-primary) !important;
   font-size: 1rem;
   line-height: 1.5rem;
   cursor: pointer;
-  transition: all var(--transition-normal);
+  transition: all var(--transition-fast);
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-primary);
   user-select: none;
-  box-shadow: var(--shadow-primary);
 }
 
 .action-button:focus {
-  border: 2px solid var(--primary-500);
-  outline: 2px solid var(--primary-200);
+  border-color: var(--accent-primary);
+  outline: none;
 }
 
 .action-button.outlined {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-secondary);
+  background: transparent;
+  border: 1px solid var(--border-primary);
 }
 
 .action-button .no-action {
@@ -31,21 +30,22 @@
 }
 
 .action-button:hover {
-  background: var(--bg-secondary);
-  border-color: var(--border-secondary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-secondary);
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--text-primary) !important;
+  border-width: 2px;
 }
 
 .action-button.connected {
-  background: var(--primary-500);
-  color: var(--neutral-0);
-  border-color: var(--primary-500);
+  background: #1e40af; /* Dark blue */
+  color: var(--bg-primary);
+  border-color: #1e40af;
 }
 
 .action-button.connected:hover {
-  background: var(--primary-600);
-  border-color: var(--primary-600);
+  opacity: 0.9;
+  background: #1e3a8a; /* Darker blue on hover */
+  border-color: #1e3a8a;
 }
 
 @property --volume {
@@ -61,19 +61,22 @@
 
 .mic-button {
   position: relative;
-  background-color: var(--error-500);
+  background-color: #ef4444; /* Red */
   z-index: 1;
-  color: var(--neutral-0);
+  color: var(--bg-primary);
   transition: all var(--transition-normal);
+  border-color: #ef4444;
 }
 
 .mic-button:focus {
-  border: 2px solid var(--error-500);
-  outline: 2px solid var(--error-200);
+  border-color: #ef4444; /* Red */
+  outline: none;
 }
 
 .mic-button:hover {
-  background-color: var(--error-600);
+  opacity: 0.9;
+  background-color: #dc2626; /* Darker red on hover */
+  border-color: #dc2626;
 }
 
 .mic-button::before {
@@ -83,33 +86,34 @@
   left: calc(var(--volume) * -1);
   display: block;
   content: "";
-  opacity: 0.35;
-  background-color: var(--error-500);
+  opacity: 0.25;
+  background-color: #ef4444; /* Red */
   width: calc(100% + var(--volume) * 2);
   height: calc(100% + var(--volume) * 2);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
   transition: all 0.02s ease-in-out;
 }
 
 .connect-toggle:focus {
-  border: 2px solid var(--primary-500);
-  outline: 2px solid var(--primary-200);
+  border-color: #1e40af; /* Dark blue */
+  outline: none;
 }
 
 .connect-toggle:not(.connected) {
-  background-color: var(--primary-500);
-  color: var(--neutral-0);
-  border-color: var(--primary-500);
+  background-color: #1e40af; /* Dark blue */
+  color: var(--bg-primary);
+  border-color: #1e40af;
 }
 
 .connect-toggle:not(.connected):hover {
-  background-color: var(--primary-600);
-  border-color: var(--primary-600);
+  opacity: 0.9;
+  background-color: #1e3a8a; /* Darker blue on hover */
+  border-color: #1e3a8a;
 }
 
 .control-tray {
   position: absolute;
-  bottom: var(--space-6);
+  bottom: var(--space-8);
   left: 50%;
   transform: translate(-50%, 0);
   display: inline-flex;
@@ -118,18 +122,17 @@
   gap: var(--space-3);
   padding: var(--space-3);
   background: var(--bg-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-tertiary);
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
 }
 
 .control-tray .disabled .action-button,
 .control-tray .action-button.disabled {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-secondary);
-  color: var(--text-tertiary);
-  opacity: 0.6;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  opacity: 0.5;
 }
 
 .control-tray .connection-container {
@@ -141,17 +144,20 @@
 }
 
 .control-tray .connection-button-container {
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   background: var(--bg-secondary);
-  padding: var(--space-3);
+  padding: var(--space-2);
 }
 
 .control-tray .text-indicator {
-  font-size: 0.75rem;
-  color: var(--primary-600);
+  font-size: 0.625rem;
+  color: var(--text-primary) !important;
   user-select: none;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
 }
 
 .control-tray .connection-container:not(.connected) .text-indicator {
@@ -161,7 +167,7 @@
 .actions-nav {
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-lg);
   display: flex;
   gap: var(--space-2);
   align-items: stretch;
@@ -170,7 +176,6 @@
   transition: all var(--transition-slow);
   min-width: 600px;
   max-width: 800px;
-  box-shadow: var(--shadow-tertiary);
 }
 
 .actions-nav > * {
@@ -180,28 +185,27 @@
   gap: var(--space-4);
 }
 
-/* Fixed Input Field */
+/* Text Input Field */
 .text-input-container {
   display: flex;
-  flex-direction: row; /* ensure input and button are on one line */
+  flex-direction: row;
   align-items: center;
-  gap: 0.375rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: 0.375rem 0.5rem;
+  gap: var(--space-2);
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
   flex: 1;
   min-width: 300px;
   max-width: 450px;
-  height: 2.25rem;
-  box-shadow: inset 0 0 4px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.25);
-  transition: all 0.25s ease;
+  height: 2.5rem;
+  transition: all var(--transition-fast);
 }
 
 .text-input-container:focus-within {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 2px var(--primary-400), 0 2px 8px rgba(0,0,0,0.4);
-  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+  border-width: 2px;
+  background: var(--bg-secondary);
 }
 
 .text-input-field {
@@ -209,82 +213,64 @@
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
   font-size: 0.875rem;
-  line-height: 1.25rem;
-  padding: 0 0.25rem;
+  line-height: 1.5rem;
+  padding: 0;
   height: 100%;
+  font-family: var(--font-family-primary);
+  -webkit-text-fill-color: var(--text-primary) !important;
+  font-weight: 500;
 }
 
 .text-input-field::placeholder {
-  color: var(--text-tertiary);
-  opacity: 0.75;
+  color: var(--text-secondary) !important;
+  opacity: 0.8 !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
 }
 
-/* Send Button (matches new input design) */
+/* Send Button */
 .send-button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  background: var(--primary-500);
+  background: var(--accent-primary);
   border: none;
-  border-radius: var(--radius-md);
-  color: var(--neutral-0);
+  border-radius: var(--radius-xs);
+  color: var(--bg-primary);
   cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
 .send-button:hover:not(:disabled) {
-  background: var(--primary-600);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.35);
+  opacity: 0.9;
 }
 
 .send-button:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  transform: scale(0.95);
 }
 
 .send-button:disabled {
   background: var(--bg-tertiary);
-  color: var(--text-tertiary);
+  color: var(--text-muted);
   cursor: not-allowed;
-  box-shadow: none;
-}
-
-@keyframes opacity-pulse {
-  0% { opacity: 0.9; }
-  50% { opacity: 1; }
-  100% { opacity: 0.9; }
 }
 
 /* Resume Session Button */
 .resume-button {
-  background-color: var(--warning-500);
-  color: var(--neutral-0);
-  margin-left: 0.5rem;
-  animation: pulse 2s infinite;
+  background-color: var(--accent-primary);
+  color: var(--bg-primary);
+  margin-left: var(--space-2);
 }
 
 .resume-button:hover {
-  background-color: var(--warning-600);
-  transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .resume-button:focus {
-  border: 2px solid var(--warning-500);
-  outline: 2px solid var(--warning-200);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(255, 193, 7, 0);
-  }
+  border-color: var(--accent-primary);
+  outline: none;
 }

@@ -38,9 +38,9 @@ class MetricsProcessor:
         self.db = db
         self.emotional_memory: List[Dict[str, Any]] = []
     
-    def get_context_for_convei(self, session_id: str, time_window: int = 30) -> Dict[str, Any]:
+    def get_context_for_convei(self, session_id: str, time_window: int = 30, conversation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Get emotionally intelligent context for CONVEI
+        Get emotionally intelligent context for CONVEI with conversation context
         """
         try:
             current_time = datetime.now().timestamp()
@@ -58,25 +58,30 @@ class MetricsProcessor:
             # Get historical for trends
             metrics_range = self.db.get_metrics_range(session_id, start_time, current_time)
             
-            # Deep emotional analysis
-            emotional_state = self._analyze_emotional_state(current)
-            emotional_trends = self._analyze_emotional_trends(metrics_range)
-            behavioral_patterns = self._detect_behavioral_patterns(metrics_range)
-            conversation_guidance = self._generate_conversation_guidance(emotional_state, emotional_trends)
+            # Deep emotional analysis with conversation context
+            emotional_state = self._analyze_emotional_state(current, conversation_context)
+            emotional_trends = self._analyze_emotional_trends(metrics_range, conversation_context)
+            behavioral_patterns = self._detect_behavioral_patterns(metrics_range, conversation_context)
+            conversation_guidance = self._generate_conversation_guidance(emotional_state, emotional_trends, conversation_context)
+            
+            # Analyze conversation context correlation
+            conversation_correlation = self._analyze_conversation_correlation(metrics_range, conversation_context)
             
             context = {
                 "current_state": self._format_current_state(current, emotional_state),
                 "recent_trends": emotional_trends,
                 "behavioral_patterns": behavioral_patterns,
-                "behavioral_insights": self._generate_deep_insights(current, metrics_range, emotional_state),
-                "recommendations": self._generate_smart_recommendations(emotional_state, emotional_trends, behavioral_patterns),
+                "behavioral_insights": self._generate_deep_insights(current, metrics_range, emotional_state, conversation_context),
+                "recommendations": self._generate_smart_recommendations(emotional_state, emotional_trends, behavioral_patterns, conversation_context),
                 "conversation_guidance": conversation_guidance,
+                "conversation_correlation": conversation_correlation,
                 "emotional_intelligence": {
                     "primary_emotion": emotional_state.get('primary_emotion', 'neutral'),
                     "emotional_intensity": emotional_state.get('intensity', 'moderate'),
                     "emotional_valence": emotional_state.get('valence', 0),
                     "suggested_approach": conversation_guidance.get('approach', 'neutral'),
-                    "empathy_level_needed": emotional_state.get('empathy_needed', 'moderate')
+                    "empathy_level_needed": emotional_state.get('empathy_needed', 'moderate'),
+                    "contextual_understanding": conversation_correlation.get('understanding', '')
                 }
             }
             
@@ -85,7 +90,7 @@ class MetricsProcessor:
             logger.error(f"Error getting context for CONVEI: {e}")
             return {}
     
-    def _analyze_emotional_state(self, current: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_emotional_state(self, current: Optional[Dict[str, Any]], conversation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Deep analysis of current emotional state"""
         if not current:
             return {
@@ -144,7 +149,7 @@ class MetricsProcessor:
             'attention_quality': 'high' if attention_score > 70 else 'low' if attention_score < 40 else 'moderate'
         }
     
-    def _analyze_emotional_trends(self, metrics_range: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_emotional_trends(self, metrics_range: List[Dict[str, Any]], conversation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Analyze emotional patterns over time"""
         if not metrics_range or len(metrics_range) < 2:
             return {
@@ -210,7 +215,7 @@ class MetricsProcessor:
             'emotion_sequence': emotions[-5:] if len(emotions) >= 5 else emotions
         }
     
-    def _detect_behavioral_patterns(self, metrics_range: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _detect_behavioral_patterns(self, metrics_range: List[Dict[str, Any]], conversation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Detect behavioral patterns for deeper understanding"""
         if not metrics_range or len(metrics_range) < 3:
             return {'patterns_detected': False}
@@ -278,7 +283,7 @@ class MetricsProcessor:
             return 'mixed'
         return 'neutral'
     
-    def _generate_conversation_guidance(self, emotional_state: Dict[str, Any], trends: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_conversation_guidance(self, emotional_state: Dict[str, Any], trends: Dict[str, Any], conversation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Generate smart conversation guidance"""
         emotion = emotional_state.get('primary_emotion', 'neutral')
         intensity = emotional_state.get('intensity', 'moderate')
@@ -376,6 +381,94 @@ class MetricsProcessor:
         
         return guidance
     
+    def _analyze_conversation_correlation(self, metrics_range: List[Dict[str, Any]], conversation_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze correlation between conversation topics and emotional changes"""
+        if not conversation_context or not metrics_range:
+            return {
+                'understanding': 'No conversation context available',
+                'topics': [],
+                'emotional_triggers': [],
+                'topic_emotion_map': {}
+            }
+        
+        # Extract conversation history
+        conversation_history = conversation_context.get('conversationHistory', [])
+        recent_topics = conversation_context.get('recentTopics', [])
+        last_user_input = conversation_context.get('lastUserInput', '')
+        
+        # Analyze emotional changes in relation to conversation
+        topic_emotion_map = {}
+        emotional_triggers = []
+        
+        # Map emotions to conversation topics
+        if conversation_history and metrics_range:
+            # Try to correlate emotional shifts with conversation topics
+            for i, entry in enumerate(conversation_history[-5:]):  # Last 5 conversation entries
+                user_input = entry.get('userInput', '').lower()
+                # Simple keyword extraction
+                keywords = self._extract_keywords(user_input)
+                
+                # Find corresponding metric (approximate timing)
+                if i < len(metrics_range):
+                    metric = metrics_range[-(len(conversation_history) - i) if i < len(metrics_range) else -1]
+                    emotion = metric.get("unified_emotion", "neutral")
+                    sentiment = metric.get("unified_sentiment", 0)
+                    
+                    for keyword in keywords:
+                        if keyword not in topic_emotion_map:
+                            topic_emotion_map[keyword] = []
+                        topic_emotion_map[keyword].append({
+                            'emotion': emotion,
+                            'sentiment': sentiment
+                        })
+        
+        # Identify emotional triggers from conversation
+        if last_user_input:
+            negative_keywords = ['sad', 'angry', 'frustrated', 'worried', 'scared', 'tired', 'difficult', 'problem', 'issue', 'bad', 'hate', 'disappointed']
+            positive_keywords = ['happy', 'excited', 'great', 'good', 'love', 'wonderful', 'amazing', 'fantastic', 'joy', 'pleased']
+            
+            last_input_lower = last_user_input.lower()
+            if any(kw in last_input_lower for kw in negative_keywords):
+                emotional_triggers.append({
+                    'trigger': 'negative_topic',
+                    'context': last_user_input[:50],
+                    'expected_emotion': 'sad' if 'sad' in last_input_lower else 'angry' if any(k in last_input_lower for k in ['angry', 'frustrated']) else 'negative'
+                })
+            elif any(kw in last_input_lower for kw in positive_keywords):
+                emotional_triggers.append({
+                    'trigger': 'positive_topic',
+                    'context': last_user_input[:50],
+                    'expected_emotion': 'happy'
+                })
+        
+        # Generate understanding
+        understanding = "Analyzing behavioral patterns in context of conversation topics."
+        if topic_emotion_map:
+            understanding += f" Found {len(topic_emotion_map)} topic-emotion correlations."
+        if emotional_triggers:
+            understanding += f" Identified {len(emotional_triggers)} potential emotional triggers from conversation."
+        
+        return {
+            'understanding': understanding,
+            'topics': list(topic_emotion_map.keys())[:5],
+            'emotional_triggers': emotional_triggers,
+            'topic_emotion_map': {k: v[-1] if v else {} for k, v in list(topic_emotion_map.items())[:5]},
+            'conversation_length': len(conversation_history),
+            'last_topic': last_user_input[:50] if last_user_input else None
+        }
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """Extract meaningful keywords from text"""
+        if not text:
+            return []
+        
+        # Simple keyword extraction (can be enhanced with NLP)
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'when', 'where', 'why', 'how'}
+        
+        words = text.lower().split()
+        keywords = [w for w in words if len(w) > 3 and w not in stop_words]
+        return keywords[:10]  # Return top 10 keywords
+    
     def _format_current_state(self, current: Optional[Dict[str, Any]], emotional_state: Dict[str, Any]) -> Dict[str, Any]:
         """Format current state with emotional intelligence"""
         if not current:
@@ -390,6 +483,46 @@ class MetricsProcessor:
         
         emotion = current.get("unified_emotion", "neutral")
         
+        # Extract blink rate from video_data if available
+        blink_rate = None
+        total_blinks = None
+        blink_duration = None
+        blink_interval = None
+        
+        # Extract audio data from audio_data if available
+        audio_energy = None
+        audio_pitch = None
+        speech_rate = None
+        
+        if current:
+            video_data = current.get("video_data")
+            if isinstance(video_data, str):
+                try:
+                    import json
+                    video_data = json.loads(video_data)
+                except:
+                    video_data = None
+            
+            if isinstance(video_data, dict):
+                blink_rate = video_data.get("blink_rate")
+                total_blinks = video_data.get("total_blinks")
+                blink_duration = video_data.get("blink_duration")
+                blink_interval = video_data.get("blink_interval")
+            
+            # Extract audio data
+            audio_data = current.get("audio_data")
+            if isinstance(audio_data, str):
+                try:
+                    import json
+                    audio_data = json.loads(audio_data)
+                except:
+                    audio_data = None
+            
+            if isinstance(audio_data, dict):
+                audio_energy = audio_data.get("energy")
+                audio_pitch = audio_data.get("pitch")
+                speech_rate = audio_data.get("speech_rate")
+        
         return {
             "emotion": emotion,
             "attention": current.get("unified_attention", "Unknown"),
@@ -400,6 +533,15 @@ class MetricsProcessor:
             "fatigue": current.get("unified_fatigue", "Normal"),
             "posture": current.get("unified_posture", "Unknown"),
             "movement": current.get("unified_movement", "Unknown"),
+            # Blink metrics
+            "blink_rate": blink_rate,
+            "total_blinks": total_blinks,
+            "blink_duration": blink_duration,
+            "blink_interval": blink_interval,
+            # Audio metrics
+            "audio_energy": audio_energy,
+            "audio_pitch": audio_pitch,
+            "speech_rate": speech_rate,
             # Emotional intelligence additions
             "emotional_intensity": emotional_state.get('intensity', 'moderate'),
             "empathy_level_needed": emotional_state.get('empathy_needed', 'moderate'),
@@ -424,7 +566,7 @@ class MetricsProcessor:
         
         return contexts.get(emotion, "User's emotional state is nuanced - pay close attention")
     
-    def _generate_deep_insights(self, current: Optional[Dict[str, Any]], metrics_range: List[Dict[str, Any]], emotional_state: Dict[str, Any]) -> List[str]:
+    def _generate_deep_insights(self, current: Optional[Dict[str, Any]], metrics_range: List[Dict[str, Any]], emotional_state: Dict[str, Any], conversation_context: Optional[Dict[str, Any]] = None) -> List[str]:
         """Generate deep behavioral insights"""
         insights = []
         
@@ -473,9 +615,30 @@ class MetricsProcessor:
             if len(set(emotions)) >= 4:
                 insights.append("User's emotions have been variable - they may be processing complex feelings")
         
+        # Conversation context insights
+        if conversation_context:
+            last_input = conversation_context.get('lastUserInput', '')
+            conversation_history = conversation_context.get('conversationHistory', [])
+            
+            if last_input:
+                # Check if conversation topic aligns with emotion
+                if emotion == 'sad' and any(word in last_input.lower() for word in ['problem', 'issue', 'difficult', 'worried', 'sad', 'disappointed']):
+                    insights.append("💬 The conversation topic about challenges aligns with the sad emotion - user may be sharing concerns")
+                elif emotion == 'happy' and any(word in last_input.lower() for word in ['happy', 'excited', 'great', 'good', 'wonderful', 'amazing']):
+                    insights.append("✨ Positive conversation topic matches the happy emotion - user is engaged positively")
+                elif emotion == 'angry' and any(word in last_input.lower() for word in ['angry', 'frustrated', 'annoyed', 'upset']):
+                    insights.append("⚠️ Conversation about frustration aligns with angry emotion - user needs validation")
+            
+            # Long conversation insights
+            if len(conversation_history) > 15:
+                if engagement == 'high':
+                    insights.append("📚 Extended conversation with high engagement - user is deeply invested in this topic")
+                elif engagement == 'low':
+                    insights.append("⏱️ Long conversation with declining engagement - consider summarizing or offering a break")
+        
         return insights if insights else ["User appears stable - continue with natural conversation flow"]
     
-    def _generate_smart_recommendations(self, emotional_state: Dict[str, Any], trends: Dict[str, Any], patterns: Dict[str, Any]) -> List[str]:
+    def _generate_smart_recommendations(self, emotional_state: Dict[str, Any], trends: Dict[str, Any], patterns: Dict[str, Any], conversation_context: Optional[Dict[str, Any]] = None) -> List[str]:
         """Generate smart, actionable recommendations"""
         recommendations = []
         

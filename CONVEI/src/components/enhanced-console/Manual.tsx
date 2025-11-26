@@ -8,12 +8,12 @@ const Manual: React.FC = () => {
   const manualContent = {
     en: {
       title: "Quick Guide",
-      subtitle: "Essential CES System Instructions",
+      subtitle: "Essential ARIA System Instructions",
       sections: [
         {
           title: "Getting Started",
           content: `
-CES is an AI assistant for postal services. Use voice or text to ask about shipping rates, services, and general inquiries.
+ARIA is an emotionally intelligent AI assistant. Use voice or text to have meaningful conversations with emotional understanding.
 
 **Quick Setup:**
 1. Click "Play Button" to start
@@ -81,7 +81,7 @@ CES is an AI assistant for postal services. Use voice or text to ask about shipp
 • Connect/Disconnect: Session control
 • Microphone: Voice input control
 • Settings: Voice and model selection
-• CES Logo: Reset conversation
+• ARIA Logo: Reset conversation
 
 **Language:**
 • EN/MS buttons switch language
@@ -111,12 +111,12 @@ CES is an AI assistant for postal services. Use voice or text to ask about shipp
     },
     ms: {
       title: "Panduan Ringkas",
-      subtitle: "Arahan Penting Sistem CES",
+      subtitle: "Arahan Penting Sistem ARIA",
       sections: [
         {
           title: "Bermula",
           content: `
-CES adalah pembantu AI untuk perkhidmatan pos. Gunakan suara atau teks untuk bertanya tentang kadar penghantaran, perkhidmatan, dan pertanyaan umum.
+ARIA adalah pembantu AI yang cerdas secara emosi. Gunakan suara atau teks untuk berkomunikasi dengan pemahaman emosi yang mendalam.
 
 **Persediaan Pantas:**
 1. Klik "Connect" untuk bermula
@@ -184,7 +184,7 @@ CES adalah pembantu AI untuk perkhidmatan pos. Gunakan suara atau teks untuk ber
 • Connect/Disconnect: Kawalan sesi
 • Mikrofon: Kawalan input suara
 • Tetapan: Pemilihan suara dan model
-• Logo CES: Tetapkan semula perbualan
+• Logo ARIA: Tetapkan semula perbualan
 
 **Bahasa:**
 • Butang EN/MS tukar bahasa

@@ -3,7 +3,7 @@
  * Shows user messages, tool calls, and responses in a clean, scrollable interface
  */
 
-import { useEffect, useState, memo, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { useConversationMemory } from "../../contexts/ConversationMemoryContext";
@@ -31,7 +31,6 @@ function ChatInterfaceComponent() {
   const [currentAgent, setCurrentAgent] = useState<string>(t(AGENT_NAMES.MAIN));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const agentRegistryRef = useRef<AgentRegistry | null>(null);
@@ -63,18 +62,7 @@ function ChatInterfaceComponent() {
     }
   }, [behavioralContextPrompt]);
 
-  // Update welcome message when language changes
-  useEffect(() => {
-    if (showWelcome && agentRegistryRef.current) {
-      const welcomeMessage: ChatMessage = {
-        id: 'welcome',
-        type: 'system',
-        content: agentRegistryRef.current.getWelcomeMessage().subtitle,
-        timestamp: new Date()
-      };
-      setMessages([welcomeMessage]);
-    }
-  }, [language, showWelcome]);
+  // Welcome message removed - start with empty messages
 
     // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -130,10 +118,6 @@ function ChatInterfaceComponent() {
           console.log("🔧 Tool call received:", { name, args, fullToolCall: toolCall });
         }
 
-        // Hide welcome section when any tool call happens
-        if (showWelcome) {
-          setShowWelcome(false);
-        }
 
         setIsProcessing(true);
 
@@ -245,7 +229,7 @@ function ChatInterfaceComponent() {
     return () => {
       client.off("toolcall", onToolCall);
     };
-  }, [client, isInitialized, language, t, memory, addConversationEntry, showWelcome, agentRegistry, setLanguage]);
+  }, [client, isInitialized, language, t, memory, addConversationEntry, agentRegistry, setLanguage]);
 
   // Handle output audio transcriptions (AI speaking) with accumulation
   useEffect(() => {
@@ -254,11 +238,6 @@ function ChatInterfaceComponent() {
 
     const onTranscription = (text: string) => {
       if (!text) return;
-
-      // Hide welcome section when transcription appears
-      if (showWelcome) {
-        setShowWelcome(false);
-      }
 
       // Accumulate transcription text
       accumulatedText += text;
@@ -304,7 +283,7 @@ function ChatInterfaceComponent() {
       client.off("transcription", onTranscription);
       client.off("turncomplete", onTurnComplete);
     };
-  }, [client, showWelcome, addMessage]);
+  }, [client, addMessage]);
 
   // Handle input audio transcriptions (User speaking) - show "Speaking..." only
   useEffect(() => {
@@ -314,8 +293,8 @@ function ChatInterfaceComponent() {
       if (!text) return;
 
       // Hide welcome section when transcription appears
-      if (showWelcome) {
-        setShowWelcome(false);
+      // Welcome section removed
+      if (false) {
       }
 
       // Create or keep showing "Speaking..." message
@@ -351,16 +330,12 @@ function ChatInterfaceComponent() {
       client.off("inputtranscription", onInputTranscription);
       client.off("turncomplete", onTurnComplete);
     };
-  }, [client, showWelcome]);
+  }, [client]);
 
   // Sync context messages with local messages
   useEffect(() => {
     // Sync context messages but avoid duplicates by ID
     if (!contextMessages.length) return;
-
-    if (showWelcome) {
-      setShowWelcome(false);
-    }
 
     setMessages(prev => {
       const existingIds = new Set(prev.map(m => m.id));
@@ -379,11 +354,12 @@ function ChatInterfaceComponent() {
       const filtered = prev.filter(m => m.id !== 'welcome');
       return [...filtered, ...toAdd];
     });
-  }, [contextMessages, showWelcome]);
+  }, [contextMessages]);
 
   // Initialize welcome message
   useEffect(() => {
-    if (showWelcome && messages.length === 0) {
+    // Welcome section removed - no initial message
+    if (false && messages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         type: 'system',
@@ -392,7 +368,7 @@ function ChatInterfaceComponent() {
       };
       setMessages([welcomeMessage]);
     }
-  }, [showWelcome, messages.length, t, language]);
+  }, [messages.length, t, language]);
 
   const handleUserMessage = useCallback(async (message: string) => {
     // Validate and sanitize input
@@ -405,10 +381,6 @@ function ChatInterfaceComponent() {
     stopAudio();
 
     // Hide welcome section when user starts chatting
-    if (showWelcome) {
-      setShowWelcome(false);
-    }
-
     // If not connected, automatically connect first
     if (!connected) {
       try {
@@ -453,7 +425,7 @@ function ChatInterfaceComponent() {
               };
               setMessages(prev => [...prev, errorMessage]);
             }
-  }, [showWelcome, connected, client, connect, stopAudio]);
+  }, [connected, client, connect, stopAudio]);
 
   // Reset conversation and go to home page
   const handleLogoClick = useCallback(async () => {
@@ -477,10 +449,9 @@ function ChatInterfaceComponent() {
 
     // Reset local state
     setMessages([]);
-    setShowWelcome(true);
     setCurrentAgent(t(AGENT_NAMES.MAIN));
     setIsProcessing(false);
-  }, [stopAudio, connected, client, clearMemory, clearMessages, setMessages, setShowWelcome, setCurrentAgent, setIsProcessing, t]);
+  }, [stopAudio, connected, client, clearMemory, clearMessages, setMessages, setCurrentAgent, setIsProcessing, t]);
 
   // Render inline markdown elements like bold, italic
   const renderInlineMarkdown = useCallback((text: string) => {
@@ -647,6 +618,40 @@ function ChatInterfaceComponent() {
                   size={40} 
                   isActive={isProcessing || behavioralData.isAvailable}
                   emotion={behavioralData.currentState?.emotion || 'neutral'}
+                  audioLevel={(() => {
+                    // Calculate normalized audio level from available metrics
+                    const energy = behavioralData.currentState?.audioEnergy || 0;
+                    const pitch = behavioralData.currentState?.audioPitch || 0;
+                    const speechRate = behavioralData.currentState?.speechRate || 0;
+                    
+                    // Debug logging (remove in production)
+                    if (energy > 0 || pitch > 0 || speechRate > 0) {
+                      console.log('Audio data:', { energy, pitch, speechRate });
+                    }
+                    
+                    // Normalize each metric with better ranges
+                    // Energy: typically 0-1, but can be higher
+                    const normalizedEnergy = Math.min(Math.max(energy / 2.0, 0), 1); // Allow up to 2.0
+                    // Pitch: typically 100-300 Hz for human voice
+                    const normalizedPitch = Math.min(Math.max((Math.abs(pitch || 0) - 80) / 220, 0), 1); // 80-300 Hz range
+                    // Speech rate: typically 2-5 words per second
+                    const normalizedSpeechRate = Math.min(Math.max((speechRate || 0) / 6.0, 0), 1); // Allow up to 6 wps
+                    
+                    // Combine with weights (energy is most important, but use average if all are present)
+                    let audioLevel = 0;
+                    const activeMetrics = [normalizedEnergy, normalizedPitch, normalizedSpeechRate].filter(v => v > 0);
+                    if (activeMetrics.length > 0) {
+                      // Use weighted average if multiple metrics, otherwise use the single metric
+                      audioLevel = activeMetrics.length > 1 
+                        ? (normalizedEnergy * 0.5 + normalizedPitch * 0.3 + normalizedSpeechRate * 0.2)
+                        : activeMetrics[0];
+                    }
+                    
+                    // Boost the level slightly to make it more reactive
+                    audioLevel = Math.min(audioLevel * 1.2, 1);
+                    
+                    return audioLevel;
+                  })()}
                 />
               </div>
               <div className="message-content-wrapper">
@@ -777,7 +782,17 @@ function ChatInterfaceComponent() {
       default:
         return null;
     }
-  }, [handleUserMessage, renderMarkdown, t]);
+  }, [
+    handleUserMessage, 
+    renderMarkdown, 
+    t, 
+    behavioralData.currentState?.emotion, 
+    behavioralData.isAvailable, 
+    isProcessing,
+    behavioralData.currentState?.audioEnergy,
+    behavioralData.currentState?.audioPitch,
+    behavioralData.currentState?.speechRate
+  ]);
 
   return (
     <div className="chat-interface">
@@ -789,7 +804,7 @@ function ChatInterfaceComponent() {
             title="Go to home page and reset conversation"
             aria-label="Reset conversation and go to home page"
           >
-            <span className="logo-text">CES</span>
+            <span className="logo-text">ARIA</span>
           </button>
         </div>
         <div className="header-controls">
@@ -828,35 +843,14 @@ function ChatInterfaceComponent() {
       </div>
       
       <div className="chat-content">
-        {showWelcome && (
-          <div className="welcome-section">
-            <div className="welcome-message">
-              <h2>{agentRegistryRef.current?.getWelcomeMessage().title || t("welcome_title")}</h2>
-              <div className="service-options">
-                {agentRegistryRef.current?.getServiceOptions().map((service, index) => (
-                  <div 
-                    key={`${index}-${language}`} 
-                    className="service-card" 
-                    onClick={() => handleUserMessage(service.title)}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Select ${service.title} service`}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleUserMessage(service.title);
-                      }
-                    }}
-                  >
-                    <h3>{service.title}</h3>
-                    <p>{service.description}</p>
-                  </div>
-                ))}
-              </div>
+        {messages.length === 0 && (
+          <div className="aria-greeting">
+            <div className="greeting-text">
+              <span className="greeting-pulse">Hello, I'm</span>
+              <span className="greeting-name">ARIA</span>
             </div>
           </div>
         )}
-        
         <div className="conversation-section">
           <div className="messages-container" role="log" aria-live="polite" aria-label="Conversation messages">
             {messages.map(renderMessage)}

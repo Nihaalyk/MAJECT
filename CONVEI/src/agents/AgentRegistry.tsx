@@ -83,6 +83,12 @@ export class AgentRegistry {
           };
           break;
 
+        case "set_user_name":
+          const userName = args.name;
+          console.log("👤 set_user_name tool called:", { name: userName });
+          result = this.setUserName(userName);
+          break;
+
         case "get_behavioral_context":
           const sessionId = "current";
           const windowSeconds = args.window || 5;
@@ -112,6 +118,15 @@ export class AgentRegistry {
               }
             }
           }
+          break;
+
+        case "generate_behavioral_report":
+          console.log("📋 generate_behavioral_report tool called");
+          result = await this.generateBehavioralReport(
+            args.include_recommendations !== false,
+            args.include_timeline !== false
+          );
+          console.log("📋 generate_behavioral_report result:", result);
           break;
 
         case "analyze_emotional_journey":
@@ -154,15 +169,34 @@ export class AgentRegistry {
   }
 
   /**
-   * Advanced behavioral context with emotional intelligence
+   * Advanced behavioral context with emotional intelligence and conversation context
    */
   private async getBehavioralContext(sessionId: string, window: number = 30): Promise<any> {
     try {
+      // Prepare conversation context from memory
+      const conversationContext = {
+        conversationHistory: this.memory.currentContext.conversationHistory.slice(-10).map(entry => ({
+          userInput: entry.userInput,
+          agentResponse: entry.agentResponse,
+          timestamp: entry.timestamp.getTime()
+        })),
+        lastUserInput: this.memory.currentContext.lastInquiry || '',
+        recentTopics: this._extractRecentTopics(this.memory.currentContext.conversationHistory),
+        sessionId: this.memory.sessionData.sessionId,
+        totalInteractions: this.memory.sessionData.totalInteractions
+      };
+      
+      // Send conversation context with the request
       const response = await fetch(
         `${this.fusionApiUrl}/api/metrics/context/${sessionId}?window=${window}`,
         {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            conversation_context: conversationContext
+          }),
           mode: 'cors'
         }
       );
@@ -195,6 +229,10 @@ export class AgentRegistry {
       const posture = state.posture || 'Unknown';
       const movement = state.movement || 'Unknown';
       const attentionScore = state.attention_score || 50;
+      const blinkRate = state.blink_rate || null;
+      const totalBlinks = state.total_blinks || null;
+      const blinkDuration = state.blink_duration || null;
+      const blinkInterval = state.blink_interval || null;
 
       // Generate emotionally intelligent interpretation
       const emotionalInterpretation = this.interpretEmotionalState(emotion, sentiment, fatigue, engagement);
@@ -202,8 +240,8 @@ export class AgentRegistry {
       const empathyPrompts = this.generateEmpathyPrompts(emotion, sentiment);
 
       const message = this.currentLanguage === 'en'
-        ? this.formatEnglishBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation)
-        : this.formatKannadaBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation);
+        ? this.formatEnglishBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation, blinkRate, totalBlinks, blinkDuration, blinkInterval)
+        : this.formatKannadaBehavioralMessage(emotion, attention, engagement, sentiment, fatigue, posture, movement, attentionScore, emotionalInterpretation, blinkRate, totalBlinks, blinkDuration, blinkInterval);
 
       return {
         success: true,
@@ -219,6 +257,11 @@ export class AgentRegistry {
           posture,
           movement,
           attention_score: attentionScore,
+          // Blink metrics
+          blink_rate: blinkRate,
+          total_blinks: totalBlinks,
+          blink_duration: blinkDuration,
+          blink_interval: blinkInterval,
           // Emotional intelligence additions
           emotional_interpretation: emotionalInterpretation,
           conversation_guidance: conversationGuidance,
@@ -275,38 +318,118 @@ export class AgentRegistry {
       const trends = apiData?.recent_trends || {};
 
       // If we don't have enough local data, try to build from API data
-      if (journey.length < 3 && apiData?.recent_trends) {
+      if (journey.length < 3) {
         // Use API trends to provide some analysis even with limited data
         const dominantEmotion = trends.dominant_emotion || journey[0]?.emotion || 'neutral';
         const emotionalVariability = journey.length >= 2 ? this.calculateEmotionalVariability(journey) : 'Insufficient data';
         const emotionalArc = journey.length >= 2 ? this.determineEmotionalArc(journey) : 'Not enough data';
 
+        let message = this.currentLanguage === 'en'
+          ? `**Your Emotional Journey Analysis:**\n\n`
+          : `**ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
+
+        message += this.currentLanguage === 'en'
+          ? `🎭 **Dominant Emotion**: ${dominantEmotion}\n`
+          : `🎭 **ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
+
+        message += this.currentLanguage === 'en'
+          ? `📊 **Emotional Stability**: ${emotionalVariability}\n`
+          : `📊 **ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
+
+        message += this.currentLanguage === 'en'
+          ? `📈 **Emotional Arc**: ${emotionalArc}\n`
+          : `📈 **ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
+
+        if (trends.sentiment_trend) {
+          message += this.currentLanguage === 'en'
+            ? `💭 **Sentiment Trend**: ${trends.sentiment_trend}\n`
+            : `💭 **ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
+        }
+
+        if (journey.length > 0 && includeTimeline) {
+          message += this.currentLanguage === 'en'
+            ? `\n**Emotional Timeline:**\n`
+            : `\n**ಭಾವನಾತ್ಮಕ ಸಮಯರೇಖೆ:**\n`;
+          
+          journey.slice(-5).forEach((entry, index) => {
+            const timeAgo = Math.round((Date.now() - entry.timestamp) / 1000);
+            message += `  ${index + 1}. ${entry.emotion} (${entry.intensity}) - ${timeAgo}s ago\n`;
+          });
+        }
+
+        if (journey.length > 0 && includeTriggers) {
+          const triggers = journey.filter(e => e.trigger).slice(-3);
+          if (triggers.length > 0) {
+            message += this.currentLanguage === 'en'
+              ? `\n**Recent Emotional Triggers:**\n`
+              : `\n**ಇತ್ತೀಚಿನ ಭಾವನಾತ್ಮಕ ಪ್ರಚೋದಕಗಳು:**\n`;
+            
+            triggers.forEach((entry, index) => {
+              message += `  ${index + 1}. "${entry.trigger}..." → ${entry.emotion}\n`;
+            });
+          }
+        }
+
+        // Generate emotional insights
+        const insights = journey.length >= 2 
+          ? this.generateEmotionalInsights(journey, dominantEmotion, emotionalArc)
+          : ["Emotional patterns are still developing"];
+
+        if (journey.length < 3) {
+          message += this.currentLanguage === 'en'
+            ? `\n💡 **Note**: I'm still learning about your emotional patterns. Keep talking and I'll build a more detailed analysis of your emotional journey!\n`
+            : `\n💡 **ಗಮನಿಸಿ**: ನಾನು ಇನ್ನೂ ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಮಾದರಿಗಳ ಬಗ್ಗೆ ಕಲಿಯುತ್ತಿದ್ದೇನೆ. ಮಾತನಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ ಮತ್ತು ನಾನು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿವರವಾದ ವಿಶ್ಲೇಷಣೆಯನ್ನು ನಿರ್ಮಿಸುತ್ತೇನೆ!\n`;
+        }
+        
+        message += this.currentLanguage === 'en'
+          ? `\n**Insights:**\n${insights.map(i => `• ${i}`).join('\n')}`
+          : `\n**ಒಳನೋಟಗಳು:**\n${insights.map(i => `• ${i}`).join('\n')}`;
+
+        return {
+          success: true,
+          data: {
+            message,
+            dominant_emotion: dominantEmotion,
+            emotional_variability: emotionalVariability,
+            emotional_arc: emotionalArc,
+            journey_length: journey.length,
+            insights,
+            trends
+          }
+        };
+      }
+
+      // Analyze emotional patterns with sufficient data
+      const dominantEmotion = this.getDominantEmotion(journey);
+      const emotionalVariability = this.calculateEmotionalVariability(journey);
+      const emotionalArc = this.determineEmotionalArc(journey);
+
       let message = this.currentLanguage === 'en'
         ? `**Your Emotional Journey Analysis:**\n\n`
-        : `**Analisis Perjalanan Emosi Anda:**\n\n`;
+        : `**ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
 
       message += this.currentLanguage === 'en'
         ? `🎭 **Dominant Emotion**: ${dominantEmotion}\n`
-        : `🎭 **Emosi Dominan**: ${dominantEmotion}\n`;
+        : `🎭 **ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
 
       message += this.currentLanguage === 'en'
         ? `📊 **Emotional Stability**: ${emotionalVariability}\n`
-        : `📊 **Kestabilan Emosi**: ${emotionalVariability}\n`;
+        : `📊 **ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
 
       message += this.currentLanguage === 'en'
         ? `📈 **Emotional Arc**: ${emotionalArc}\n`
-        : `📈 **Lengkung Emosi**: ${emotionalArc}\n`;
+        : `📈 **ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
 
       if (trends.sentiment_trend) {
         message += this.currentLanguage === 'en'
           ? `💭 **Sentiment Trend**: ${trends.sentiment_trend}\n`
-          : `💭 **Trend Sentimen**: ${trends.sentiment_trend}\n`;
+          : `💭 **ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
       }
 
       if (includeTimeline && journey.length > 0) {
         message += this.currentLanguage === 'en'
           ? `\n**Emotional Timeline:**\n`
-          : `\n**Garis Masa Emosi:**\n`;
+          : `\n**ಭಾವನಾತ್ಮಕ ಸಮಯರೇಖೆ:**\n`;
         
         journey.slice(-5).forEach((entry, index) => {
           const timeAgo = Math.round((Date.now() - entry.timestamp) / 1000);
@@ -319,7 +442,7 @@ export class AgentRegistry {
         if (triggers.length > 0) {
           message += this.currentLanguage === 'en'
             ? `\n**Recent Emotional Triggers:**\n`
-            : `\n**Pencetus Emosi Terkini:**\n`;
+            : `\n**ಇತ್ತೀಚಿನ ಭಾವನಾತ್ಮಕ ಪ್ರಚೋದಕಗಳು:**\n`;
           
           triggers.forEach((entry, index) => {
             message += `  ${index + 1}. "${entry.trigger}..." → ${entry.emotion}\n`;
@@ -331,8 +454,8 @@ export class AgentRegistry {
       const insights = this.generateEmotionalInsights(journey, dominantEmotion, emotionalArc);
       
       message += this.currentLanguage === 'en'
-        ? `\n**Insights:**\n${insights.join('\n')}`
-        : `\n**Wawasan:**\n${insights.join('\n')}`;
+        ? `\n**Insights:**\n${insights.map(i => `• ${i}`).join('\n')}`
+        : `\n**ಒಳನೋಟಗಳು:**\n${insights.map(i => `• ${i}`).join('\n')}`;
 
       return {
         success: true,
@@ -638,7 +761,6 @@ export class AgentRegistry {
     if (journey.length < 2) return 'Not enough data';
     
     const positiveEmotions = ['happy', 'surprise'];
-    const negativeEmotions = ['sad', 'angry', 'fear', 'disgust'];
     
     const firstHalf = journey.slice(0, Math.floor(journey.length / 2));
     const secondHalf = journey.slice(Math.floor(journey.length / 2));
@@ -675,7 +797,9 @@ export class AgentRegistry {
   private formatEnglishBehavioralMessage(
     emotion: string, attention: string, engagement: string, 
     sentiment: number, fatigue: string, posture: string, 
-    movement: string, attentionScore: number, interpretation: string
+    movement: string, attentionScore: number, interpretation: string,
+    blinkRate: number | null = null, totalBlinks: number | null = null,
+    blinkDuration: number | null = null, blinkInterval: number | null = null
   ): string {
     let msg = `**🎭 Real-Time Emotional Analysis:**\n\n`;
     msg += `**Primary Emotion:** ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}\n`;
@@ -695,6 +819,20 @@ export class AgentRegistry {
       msg += `**Posture:** ${posture}\n`;
     }
     
+    // Add blink metrics if available
+    if (blinkRate !== null && blinkRate !== undefined) {
+      msg += `**Blink Rate:** ${blinkRate.toFixed(1)} blinks/min\n`;
+    }
+    if (totalBlinks !== null && totalBlinks !== undefined) {
+      msg += `**Total Blinks:** ${totalBlinks}\n`;
+    }
+    if (blinkDuration !== null && blinkDuration !== undefined) {
+      msg += `**Avg Blink Duration:** ${blinkDuration.toFixed(2)}s\n`;
+    }
+    if (blinkInterval !== null && blinkInterval !== undefined) {
+      msg += `**Avg Blink Interval:** ${blinkInterval.toFixed(2)}s\n`;
+    }
+    
     msg += `\n**💡 What This Tells Me:**\n${interpretation}\n`;
     
     return msg;
@@ -703,7 +841,9 @@ export class AgentRegistry {
   private formatKannadaBehavioralMessage(
     emotion: string, attention: string, engagement: string,
     sentiment: number, fatigue: string, posture: string,
-    movement: string, attentionScore: number, interpretation: string
+    movement: string, attentionScore: number, interpretation: string,
+    blinkRate: number | null = null, totalBlinks: number | null = null,
+    blinkDuration: number | null = null, blinkInterval: number | null = null
   ): string {
     let msg = `**🎭 ನೈಜ-ಸಮಯದ ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
     msg += `**ಮುಖ್ಯ ಭಾವನೆ:** ${emotion}\n`;
@@ -719,9 +859,357 @@ export class AgentRegistry {
       msg += `**ಆಯಾಸ:** ${fatigue} 😴\n`;
     }
     
+    // Add blink metrics if available
+    if (blinkRate !== null && blinkRate !== undefined) {
+      msg += `**ಕಣ್ಣು ಮಿಟುಕಿಸುವ ದರ:** ${blinkRate.toFixed(1)} ಮಿಟುಕುಗಳು/ನಿಮಿಷ\n`;
+    }
+    if (totalBlinks !== null && totalBlinks !== undefined) {
+      msg += `**ಒಟ್ಟು ಮಿಟುಕುಗಳು:** ${totalBlinks}\n`;
+    }
+    if (blinkDuration !== null && blinkDuration !== undefined) {
+      msg += `**ಸರಾಸರಿ ಮಿಟುಕು ಅವಧಿ:** ${blinkDuration.toFixed(2)}s\n`;
+    }
+    if (blinkInterval !== null && blinkInterval !== undefined) {
+      msg += `**ಸರಾಸರಿ ಮಿಟುಕು ಮಧ್ಯಂತರ:** ${blinkInterval.toFixed(2)}s\n`;
+    }
+    
     msg += `\n**💡 ಇದು ನನಗೆ ಏನು ಹೇಳುತ್ತದೆ:**\n${interpretation}\n`;
     
     return msg;
+  }
+
+  /**
+   * Set user's name for personalized interactions
+   */
+  private setUserName(name: string): any {
+    // Update memory with user's name
+    this.memory.userProfile = {
+      name: name,
+      nameConfirmed: true
+    };
+    
+    const message = this.currentLanguage === 'en'
+      ? `Lovely to meet you, ${name}! I've noted your name and will address you personally throughout our conversation. I'll also include your name in the comprehensive behavioral report I can generate for you at the end of our chat.`
+      : `${name}, ನಿಮ್ಮನ್ನು ಭೇಟಿಯಾಗಲು ಸಂತೋಷ! ನಾನು ನಿಮ್ಮ ಹೆಸರನ್ನು ಗಮನಿಸಿದ್ದೇನೆ ಮತ್ತು ನಮ್ಮ ಸಂಭಾಷಣೆಯುದ್ದಕ್ಕೂ ನಿಮ್ಮನ್ನು ವೈಯಕ್ತಿಕವಾಗಿ ಸಂಬೋಧಿಸುತ್ತೇನೆ.`;
+
+    return {
+      success: true,
+      data: {
+        message,
+        name: name,
+        confirmed: true
+      }
+    };
+  }
+
+  /**
+   * Generate comprehensive behavioral report
+   */
+  private async generateBehavioralReport(includeRecommendations: boolean = true, includeTimeline: boolean = true): Promise<any> {
+    try {
+      // Fetch report data from FUSION API
+      const response = await fetch(
+        `${this.fusionApiUrl}/api/report/current`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          mode: 'cors'
+        }
+      );
+
+      if (!response.ok) {
+        // Get error details from response
+        let errorDetail = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorDetail = errorData.detail || errorData.message || errorDetail;
+        } catch {
+          const errorText = await response.text();
+          errorDetail = errorText || errorDetail;
+        }
+        
+        // If 404, provide a more helpful message
+        if (response.status === 404) {
+          const errorMessage = this.currentLanguage === 'en'
+            ? `I couldn't find any behavioral data for this session. This might mean:\n\n• The behavioral analysis system (BEVAL) hasn't collected enough data yet\n• The session just started and needs more time to gather metrics\n• There might be a connection issue with the data collection system\n\nWould you like me to try again in a moment, or would you prefer to continue our conversation?`
+            : `ಈ ಸೆಷನ್‌ಗಾಗಿ ನಡವಳಿಕೆ ಡೇಟಾವನ್ನು ನಾನು ಕಂಡುಹಿಡಿಯಲಿಲ್ಲ. ಇದು ಇದನ್ನು ಅರ್ಥೈಸಬಹುದು:\n\n• ನಡವಳಿಕೆ ವಿಶ್ಲೇಷಣಾ ವ್ಯವಸ್ಥೆ (BEVAL) ಇನ್ನೂ ಸಾಕಷ್ಟು ಡೇಟಾವನ್ನು ಸಂಗ್ರಹಿಸಿಲ್ಲ\n• ಸೆಷನ್ ಇದೀಗ ಪ್ರಾರಂಭವಾಗಿದೆ ಮತ್ತು ಮೆಟ್ರಿಕ್‌ಗಳನ್ನು ಸಂಗ್ರಹಿಸಲು ಹೆಚ್ಚು ಸಮಯ ಬೇಕು`;
+          
+          return {
+            success: false,
+            data: {
+              message: errorMessage,
+              error: errorDetail,
+              status: response.status
+            }
+          };
+        }
+        
+        throw new Error(`Failed to fetch report data: ${errorDetail}`);
+      }
+
+      const reportData = await response.json();
+      
+      // Check if there's a message indicating no data
+      if (reportData.message && reportData.total_data_points === 0) {
+        const noDataMessage = this.currentLanguage === 'en'
+          ? `I couldn't generate a comprehensive behavioral report because no behavioral data has been collected yet for this session.\n\n**Possible reasons:**\n• The behavioral analysis system (BEVAL) may not be running\n• The session just started and needs more time to collect metrics\n• There might be a connection issue between the systems\n\n**What you can do:**\n• Make sure BEVAL is running and collecting data\n• Continue the conversation for a few more minutes to allow data collection\n• Try generating the report again later\n\nWould you like to continue our conversation, or would you prefer to try again in a moment?`
+          : `ಈ ಸೆಷನ್‌ಗಾಗಿ ಇನ್ನೂ ನಡವಳಿಕೆ ಡೇಟಾವನ್ನು ಸಂಗ್ರಹಿಸಲಾಗಿಲ್ಲವಾದ್ದರಿಂದ ನಾನು ಸಮಗ್ರ ನಡವಳಿಕೆ ವರದಿಯನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\n**ಸಾಧ್ಯತೆಗಳು:**\n• ನಡವಳಿಕೆ ವಿಶ್ಲೇಷಣಾ ವ್ಯವಸ್ಥೆ (BEVAL) ಚಾಲನೆಯಲ್ಲಿಲ್ಲ\n• ಸೆಷನ್ ಇದೀಗ ಪ್ರಾರಂಭವಾಗಿದೆ ಮತ್ತು ಮೆಟ್ರಿಕ್‌ಗಳನ್ನು ಸಂಗ್ರಹಿಸಲು ಹೆಚ್ಚು ಸಮಯ ಬೇಕು`;
+        
+        return {
+          success: false,
+          data: {
+            message: noDataMessage,
+            has_data: false
+          }
+        };
+      }
+      
+      // Get user's name
+      const userName = this.memory.userProfile?.name || 'User';
+      const sessionDuration = reportData.duration_formatted || 'Unknown';
+      const dataPoints = reportData.total_data_points || 0;
+      
+      // Generate comprehensive report
+      let report = '';
+      
+      if (this.currentLanguage === 'en') {
+        report = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              COMPREHENSIVE BEHAVIORAL ANALYSIS REPORT                        ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Subject: ${userName.padEnd(60)}     ║
+║  Session Duration: ${sessionDuration.padEnd(51)}     ║
+║  Data Points Analyzed: ${String(dataPoints).padEnd(47)}     ║
+║  Generated: ${new Date().toLocaleString().padEnd(58)}     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎭 EMOTIONAL ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Dominant Emotion:** ${reportData.emotion_analysis?.dominant_emotion || 'neutral'}
+**Emotional Variety:** ${reportData.emotion_analysis?.emotional_variety || 0} different emotions detected
+**Emotional Stability:** ${reportData.emotion_analysis?.emotional_stability || 'unknown'}
+**Emotion Transitions:** ${reportData.emotion_analysis?.transitions_count || 0} changes during session
+
+**Emotion Distribution:**
+${Object.entries(reportData.emotion_analysis?.distribution || {}).map(([emotion, count]) => 
+  `  • ${emotion}: ${count} occurrences (${((count as number / dataPoints) * 100).toFixed(1)}%)`
+).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💭 SENTIMENT ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Overall Sentiment:** ${reportData.sentiment_analysis?.overall || 'neutral'}
+**Average Score:** ${(reportData.sentiment_analysis?.average || 0).toFixed(3)} (range: -1 to +1)
+**Sentiment Range:** ${(reportData.sentiment_analysis?.min || 0).toFixed(3)} to ${(reportData.sentiment_analysis?.max || 0).toFixed(3)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👀 ATTENTION ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Average Attention Score:** ${(reportData.attention_analysis?.average_score || 50).toFixed(1)}/100
+**Attention Quality:** ${reportData.attention_analysis?.attention_quality || 'moderate'}
+**Score Range:** ${(reportData.attention_analysis?.min_score || 0).toFixed(1)} to ${(reportData.attention_analysis?.max_score || 100).toFixed(1)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+😴 FATIGUE ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Primary State:** ${reportData.fatigue_analysis?.primary_state || 'Normal'}
+**Distribution:**
+${Object.entries(reportData.fatigue_analysis?.distribution || {}).map(([state, count]) => 
+  `  • ${state}: ${count} occurrences`
+).join('\n') || '  No fatigue data available'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 ENGAGEMENT ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Primary Engagement Level:** ${reportData.engagement_analysis?.primary_level || 'medium'}
+**Distribution:**
+${Object.entries(reportData.engagement_analysis?.distribution || {}).map(([level, count]) => 
+  `  • ${level}: ${count} occurrences`
+).join('\n') || '  No engagement data available'}
+`;
+
+        if (includeTimeline && reportData.timeline) {
+          report += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📈 EMOTIONAL JOURNEY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Starting Emotion:** ${reportData.timeline.first_emotion || 'neutral'}
+**Ending Emotion:** ${reportData.timeline.last_emotion || 'neutral'}
+
+**Key Emotional Transitions:**
+${(reportData.timeline.emotion_transitions || []).slice(0, 5).map((t: any, i: number) => 
+  `  ${i + 1}. ${t.from} → ${t.to}`
+).join('\n') || '  Stable emotional state maintained'}
+`;
+        }
+
+        if (includeRecommendations) {
+          // Generate personalized recommendations based on the data
+          const recommendations = this.generatePersonalizedRecommendations(reportData, userName);
+          report += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 PERSONALIZED RECOMMENDATIONS FOR ${userName.toUpperCase()}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${recommendations}
+`;
+        }
+
+        report += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dear ${userName},
+
+During our ${sessionDuration} conversation, I observed ${dataPoints} behavioral data points.
+Your dominant emotional state was "${reportData.emotion_analysis?.dominant_emotion || 'neutral'}" with 
+${reportData.emotion_analysis?.emotional_stability || 'moderate'} stability. Your attention quality
+was ${reportData.attention_analysis?.attention_quality || 'moderate'} with an average score of 
+${(reportData.attention_analysis?.average_score || 50).toFixed(1)}/100.
+
+Thank you for sharing this time with me. I hope our conversation was valuable to you!
+
+With warmth,
+ARIA - Advanced Relational Intelligence Assistant
+
+═══════════════════════════════════════════════════════════════════════════════
+                        END OF BEHAVIORAL REPORT
+═══════════════════════════════════════════════════════════════════════════════
+`;
+      } else {
+        // Kannada version
+        report = `
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              ಸಮಗ್ರ ನಡವಳಿಕೆ ವಿಶ್ಲೇಷಣಾ ವರದಿ                                  ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  ವಿಷಯ: ${userName}
+║  ಅವಧಿ: ${sessionDuration}
+║  ಡೇಟಾ ಪಾಯಿಂಟ್‌ಗಳು: ${dataPoints}
+║  ರಚಿಸಲಾಗಿದೆ: ${new Date().toLocaleString()}
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🎭 ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**ಪ್ರಮುಖ ಭಾವನೆ:** ${reportData.emotion_analysis?.dominant_emotion || 'neutral'}
+**ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ:** ${reportData.emotion_analysis?.emotional_stability || 'unknown'}
+
+💭 ಸೆಂಟಿಮೆಂಟ್ ವಿಶ್ಲೇಷಣೆ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**ಒಟ್ಟಾರೆ:** ${reportData.sentiment_analysis?.overall || 'neutral'}
+**ಸರಾಸರಿ ಸ್ಕೋರ್:** ${(reportData.sentiment_analysis?.average || 0).toFixed(3)}
+
+👀 ಗಮನ ವಿಶ್ಲೇಷಣೆ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**ಸರಾಸರಿ ಸ್ಕೋರ್:** ${(reportData.attention_analysis?.average_score || 50).toFixed(1)}/100
+**ಗುಣಮಟ್ಟ:** ${reportData.attention_analysis?.attention_quality || 'moderate'}
+
+ಧನ್ಯವಾದಗಳು, ${userName}!
+
+ARIA
+═══════════════════════════════════════════════════════════════════════════════
+`;
+      }
+
+      return {
+        success: true,
+        data: {
+          message: report,
+          report_data: reportData,
+          user_name: userName,
+          generated_at: new Date().toISOString()
+        }
+      };
+
+    } catch (error) {
+      console.error('Error generating behavioral report:', error);
+      
+      const errorMessage = this.currentLanguage === 'en'
+        ? `I apologize, but I couldn't generate your behavioral report at this time. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        : `ಕ್ಷಮಿಸಿ, ಈ ಸಮಯದಲ್ಲಿ ನಿಮ್ಮ ನಡವಳಿಕೆ ವರದಿಯನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.`;
+
+      return {
+        success: false,
+        data: {
+          message: errorMessage,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
+    }
+  }
+
+  /**
+   * Generate personalized recommendations based on behavioral data
+   */
+  private generatePersonalizedRecommendations(reportData: any, userName: string): string {
+    const recommendations: string[] = [];
+    
+    // Based on dominant emotion
+    const dominantEmotion = reportData.emotion_analysis?.dominant_emotion?.toLowerCase() || 'neutral';
+    if (dominantEmotion === 'sad') {
+      recommendations.push(`• ${userName}, consider engaging in activities that bring you joy. Your emotional well-being is important.`);
+      recommendations.push(`• Talking to friends or loved ones about how you're feeling can be very helpful.`);
+    } else if (dominantEmotion === 'angry' || dominantEmotion === 'frustrated') {
+      recommendations.push(`• ${userName}, practicing deep breathing or short mindfulness exercises can help manage frustration.`);
+      recommendations.push(`• Taking short breaks during stressful situations can prevent emotional buildup.`);
+    } else if (dominantEmotion === 'fear' || dominantEmotion === 'anxious') {
+      recommendations.push(`• ${userName}, grounding exercises (5-4-3-2-1 technique) can help when feeling anxious.`);
+      recommendations.push(`• Breaking down challenges into smaller steps can reduce overwhelm.`);
+    } else if (dominantEmotion === 'happy') {
+      recommendations.push(`• ${userName}, wonderful to see you in good spirits! Continue doing what brings you joy.`);
+      recommendations.push(`• Consider journaling about positive moments to reinforce this emotional state.`);
+    } else {
+      recommendations.push(`• ${userName}, maintaining emotional awareness is a great practice. Keep checking in with yourself.`);
+    }
+
+    // Based on attention
+    const attentionQuality = reportData.attention_analysis?.attention_quality || 'moderate';
+    if (attentionQuality === 'needs_improvement' || attentionQuality === 'moderate') {
+      recommendations.push(`• To improve focus, try the Pomodoro technique: 25 minutes of focused work, then 5 minutes break.`);
+      recommendations.push(`• Reducing distractions in your environment can significantly improve attention.`);
+    } else {
+      recommendations.push(`• Your attention levels are excellent! This indicates good cognitive engagement.`);
+    }
+
+    // Based on fatigue
+    const primaryFatigue = reportData.fatigue_analysis?.primary_state || 'Normal';
+    if (primaryFatigue === 'Moderate' || primaryFatigue === 'Severe') {
+      recommendations.push(`• ${userName}, I noticed signs of fatigue. Ensure you're getting adequate sleep (7-9 hours).`);
+      recommendations.push(`• Regular short breaks and staying hydrated can help combat fatigue.`);
+    }
+
+    // Based on emotional stability
+    const emotionalStability = reportData.emotion_analysis?.emotional_stability || 'moderate';
+    if (emotionalStability === 'volatile') {
+      recommendations.push(`• ${userName}, your emotions showed significant variation. This is normal, but mindfulness practices can help create more stability.`);
+    }
+
+    return recommendations.join('\n');
+  }
+
+  private _extractRecentTopics(conversationHistory: Array<{ userInput: string; agentResponse: string }>): string[] {
+    const topics = new Set<string>();
+    const recentInteractions = conversationHistory.slice(-5);
+    
+    recentInteractions.forEach(interaction => {
+      const userInput = interaction.userInput?.toLowerCase() || '';
+      // Extract potential topics (simple keyword extraction)
+      const words = userInput.split(/\s+/).filter(w => w.length > 4);
+      words.forEach(word => {
+        if (!['about', 'think', 'would', 'could', 'should', 'there', 'their', 'these', 'those'].includes(word)) {
+          topics.add(word);
+        }
+      });
+    });
+    
+    return Array.from(topics).slice(0, 10);
   }
 
   private getAgentName(functionName: string): string {

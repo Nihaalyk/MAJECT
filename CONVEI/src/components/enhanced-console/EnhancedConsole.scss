@@ -289,7 +289,7 @@
     background: transparent;
     border: none;
     outline: none;
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
     font-family: var(--font-family-primary);
     font-size: 0.875rem;
     line-height: 1.5;
@@ -297,9 +297,12 @@
     min-height: 1.5rem;
     max-height: 6rem;
     overflow-y: auto;
+    -webkit-text-fill-color: var(--text-primary);
 
     &::placeholder {
-      color: var(--text-tertiary);
+      color: var(--text-muted) !important;
+      opacity: 0.6;
+      -webkit-text-fill-color: var(--text-muted);
     }
 
     &:disabled {

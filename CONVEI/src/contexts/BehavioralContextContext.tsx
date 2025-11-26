@@ -4,6 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { useConversationMemory } from './ConversationMemoryContext';
 
 export interface BehavioralState {
   emotion: string;
@@ -17,6 +18,9 @@ export interface BehavioralState {
   attentionScore?: number;
   emotionalIntensity?: string;
   empathyNeeded?: string;
+  audioEnergy?: number;
+  audioPitch?: number;
+  speechRate?: number;
 }
 
 export interface EmotionalMemoryEntry {
@@ -65,6 +69,7 @@ export const BehavioralContextProvider: React.FC<{
   children: ReactNode;
   sessionId?: string;
 }> = ({ children, sessionId }) => {
+  const { memory } = useConversationMemory();
   const [behavioralData, setBehavioralData] = useState<BehavioralContextData>({
     currentState: {
       emotion: 'neutral',
@@ -139,11 +144,29 @@ export const BehavioralContextProvider: React.FC<{
     const activeSessionId = "current";
 
     try {
+      // Prepare conversation context from conversation memory
+      const conversationContext = {
+        conversationHistory: memory.currentContext.conversationHistory.slice(-10).map(entry => ({
+          userInput: entry.userInput,
+          agentResponse: entry.agentResponse,
+          timestamp: entry.timestamp.getTime()
+        })),
+        lastUserInput: memory.currentContext.lastInquiry || '',
+        sessionId: memory.sessionData.sessionId,
+        totalInteractions: memory.sessionData.totalInteractions
+      };
+      
+      // Send conversation context with POST request
       const response = await fetch(
         `${FUSION_API_URL}/api/metrics/context/${activeSessionId}?window=${CONTEXT_WINDOW}`,
         {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            conversation_context: conversationContext
+          })
         }
       );
 
@@ -180,6 +203,23 @@ export const BehavioralContextProvider: React.FC<{
       const emotionalTrend = calculateEmotionalTrend(emotionalMemoryRef.current);
       const dominantEmotion = getDominantEmotion(emotionalMemoryRef.current);
       
+      // Extract audio data from current_state
+      // Try multiple possible field names
+      const audioEnergy = data.current_state?.audio_energy || 
+                         data.current_state?.energy || 
+                         (data.current_state?.audio_data?.energy) || 0;
+      const audioPitch = data.current_state?.audio_pitch || 
+                        data.current_state?.pitch || 
+                        (data.current_state?.audio_data?.pitch) || 0;
+      const speechRate = data.current_state?.speech_rate || 
+                        data.current_state?.speechRate || 
+                        (data.current_state?.audio_data?.speech_rate) || 0;
+      
+      // Debug logging
+      if (audioEnergy > 0 || audioPitch > 0 || speechRate > 0) {
+        console.log('📊 Audio data extracted:', { audioEnergy, audioPitch, speechRate });
+      }
+
       setBehavioralData({
         currentState: {
           emotion: currentEmotion,
@@ -192,7 +232,10 @@ export const BehavioralContextProvider: React.FC<{
           movement: data.current_state?.movement,
           attentionScore: data.current_state?.attention_score,
           emotionalIntensity: data.current_state?.emotional_intensity || data.emotional_intelligence?.emotional_intensity,
-          empathyNeeded: data.current_state?.empathy_level_needed || data.emotional_intelligence?.empathy_level_needed
+          empathyNeeded: data.current_state?.empathy_level_needed || data.emotional_intelligence?.empathy_level_needed,
+          audioEnergy: audioEnergy,
+          audioPitch: audioPitch,
+          speechRate: speechRate
         },
         insights: data.behavioral_insights || [],
         recommendations: data.recommendations || [],
@@ -212,10 +255,20 @@ export const BehavioralContextProvider: React.FC<{
         error: error instanceof Error ? error.message : 'Unknown error'
       }));
     }
-  }, [behavioralData.currentState.emotion, recordEmotionalMoment, calculateEmotionalTrend, getDominantEmotion]);
+  }, [
+    behavioralData.currentState.emotion, 
+    recordEmotionalMoment, 
+    calculateEmotionalTrend, 
+    getDominantEmotion,
+    memory.currentContext.conversationHistory,
+    memory.currentContext.lastInquiry,
+    memory.sessionData.sessionId,
+    memory.sessionData.totalInteractions
+  ]);
 
   useEffect(() => {
     fetchBehavioralContext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
