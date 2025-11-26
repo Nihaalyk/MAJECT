@@ -299,7 +299,7 @@ class BehavioralWebUI:
                 # Emit data to connected clients
                 self.socketio.emit('data_update', self.latest_data)
                 
-                time.sleep(0.1)  # 10 Hz update rate
+                time.sleep(0.05)  # 20 Hz update rate (increased from 10 Hz for higher frequency metrics)
             except Exception as e:
                 print(f"Data collection error: {e}")
                 # Continue emitting even if there's an error, with fallback data
@@ -313,7 +313,7 @@ class BehavioralWebUI:
                     self.socketio.emit('data_update', fallback_data)
                 except Exception as emit_error:
                     print(f"Failed to emit fallback data: {emit_error}")
-                time.sleep(0.1)
+                time.sleep(0.05)  # 20 Hz update rate (increased from 10 Hz)
     
     def _convert_numpy_types(self, obj):
         """Convert numpy types to native Python types for JSON serialization."""
@@ -345,6 +345,40 @@ class BehavioralWebUI:
         video_data = {}
         if hasattr(self.analyzer, 'video_analyzer'):
             va = self.analyzer.video_analyzer
+            
+            # Calculate current EAR and threshold for metrics
+            current_ear = 0.0
+            ear_threshold = 0.25
+            if hasattr(va, 'ear_values') and len(va.ear_values) > 0:
+                current_ear = sum(list(va.ear_values)[-10:]) / min(10, len(va.ear_values))
+                ear_threshold = getattr(va, 'ear_threshold', 0.25)
+            
+            # Calculate blink metrics
+            avg_blink_duration = 0.0
+            avg_blink_interval = 0.0
+            if hasattr(va, 'blink_duration') and va.blink_duration:
+                avg_blink_duration = sum(va.blink_duration) / len(va.blink_duration)
+            if hasattr(va, 'blink_intervals') and va.blink_intervals:
+                avg_blink_interval = sum(va.blink_intervals) / len(va.blink_intervals)
+            
+            # Calculate eye asymmetry
+            eye_asymmetry = 0.0
+            if hasattr(va, 'left_ear_values') and hasattr(va, 'right_ear_values'):
+                if len(va.left_ear_values) > 5 and len(va.right_ear_values) > 5:
+                    left_avg = sum(va.left_ear_values) / len(va.left_ear_values)
+                    right_avg = sum(va.right_ear_values) / len(va.right_ear_values)
+                    eye_asymmetry = abs(left_avg - right_avg) / max((left_avg + right_avg) / 2, 0.001)
+            
+            # Calculate drowsiness score
+            drowsiness_score = 0.0
+            if hasattr(va, 'drowsiness_frames') and hasattr(va, 'ear_values'):
+                drowsiness_score = va.drowsiness_frames / max(1, len(va.ear_values))
+            
+            # Get object detections
+            object_detections = []
+            if hasattr(va, 'current_detections'):
+                object_detections = va.current_detections
+            
             video_data = {
                 'emotion': str(getattr(va, 'current_emotion', 'Unknown')),
                 'emotion_scores': getattr(va, 'emotion_scores', {}),
@@ -356,7 +390,16 @@ class BehavioralWebUI:
                 'total_blinks': int(getattr(va, 'total_blink_count', 0)),
                 'fps': float(getattr(va.performance_tracker, 'current_fps', 0.0) if hasattr(va, 'performance_tracker') else 0.0),
                 'person_tracking': getattr(va, '_get_person_tracking_data', lambda: {})(),
-                'main_person': getattr(va, 'main_person', None)
+                'main_person': getattr(va, 'main_person', None),
+                # Additional detailed metrics - now included
+                'ear': current_ear,
+                'ear_threshold': ear_threshold,
+                'eye_asymmetry': eye_asymmetry,
+                'blink_duration': avg_blink_duration,
+                'blink_interval': avg_blink_interval,
+                'drowsiness_score': drowsiness_score,
+                'current_detections': object_detections,
+                'object_detections': object_detections  # Alias for schema compatibility
             }
         
         # Audio analysis data
@@ -372,14 +415,40 @@ class BehavioralWebUI:
             else:
                 confidence_numeric = float(confidence_value)
             
+            # Extract audio features
+            audio_features = getattr(aa, 'audio_features', {})
+            session_stats = getattr(aa, 'session_stats', {})
+            
+            # Get chunk duration and sample rate from config or analyzer
+            chunk_duration = getattr(aa.config, 'chunk_duration', 2.0) if hasattr(aa, 'config') else 2.0
+            sample_rate = getattr(aa.config, 'sample_rate', 16000) if hasattr(aa, 'config') else 16000
+            
+            # Get word count from current transcription or session stats
+            transcription_text = str(getattr(aa, 'current_transcription', ''))
+            word_count = len(transcription_text.split()) if transcription_text else 0
+            total_words = session_stats.get('total_words', word_count) if isinstance(session_stats, dict) else word_count
+            
             audio_data = {
-                'transcription': str(getattr(aa, 'current_transcription', '')),
+                'transcription': transcription_text,
                 'emotion': str(getattr(aa, 'current_emotion', 'neutral')),
                 'sentiment': float(getattr(aa, 'current_sentiment', 0.0)),
                 'confidence': confidence_numeric,
                 'confidence_label': str(confidence_value) if isinstance(confidence_value, str) else "unknown",
-                'audio_features': getattr(aa, 'audio_features', {}),
-                'session_stats': getattr(aa, 'session_stats', {})
+                'audio_features': audio_features,
+                'session_stats': session_stats,
+                # Additional detailed metrics
+                'chunk_duration': chunk_duration,
+                'sample_rate': sample_rate,
+                'word_count': word_count,
+                'total_words': total_words,
+                # Extract individual audio features for easier access
+                'energy': audio_features.get('energy') if isinstance(audio_features, dict) else None,
+                'pitch': audio_features.get('pitch') if isinstance(audio_features, dict) else None,
+                'speech_rate': audio_features.get('speech_rate') if isinstance(audio_features, dict) else None,
+                'silence_ratio': audio_features.get('silence_ratio') if isinstance(audio_features, dict) else None,
+                'energy_z_score': audio_features.get('energy_z_score') if isinstance(audio_features, dict) else None,
+                'pitch_z_score': audio_features.get('pitch_z_score') if isinstance(audio_features, dict) else None,
+                'rate_z_score': audio_features.get('rate_z_score') if isinstance(audio_features, dict) else None
             }
         
         # Object detection data

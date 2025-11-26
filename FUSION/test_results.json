@@ -1,0 +1,66 @@
+{
+  "passed": 10,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "API Health",
+      "passed": true,
+      "details": "{'status': 'healthy', 'service': 'FUSION API'}",
+      "timestamp": 1764181438.3824313
+    },
+    {
+      "name": "Database Schema",
+      "passed": true,
+      "details": "Tables: 6",
+      "timestamp": 1764181438.3960488
+    },
+    {
+      "name": "Session Management",
+      "passed": true,
+      "details": "Session: test_session_1764181437",
+      "timestamp": 1764181438.8370929
+    },
+    {
+      "name": "Metrics Storage",
+      "passed": true,
+      "details": "Counts: V=12528, A=12528, U=12528",
+      "timestamp": 1764181438.8580472
+    },
+    {
+      "name": "API Endpoints",
+      "passed": true,
+      "details": "4/4 endpoints working",
+      "timestamp": 1764181439.3217323
+    },
+    {
+      "name": "BEVAL Connection",
+      "passed": true,
+      "details": "Status: 200",
+      "timestamp": 1764181439.7728813
+    },
+    {
+      "name": "Metrics Processing",
+      "passed": true,
+      "details": "Session: session_1764180869",
+      "timestamp": 1764181440.2543929
+    },
+    {
+      "name": "Data Integrity",
+      "passed": true,
+      "details": "All checks passed",
+      "timestamp": 1764181440.3060205
+    },
+    {
+      "name": "Performance",
+      "passed": true,
+      "details": "API: 260.1ms, Context: 11.1ms, DB: 1.5ms",
+      "timestamp": 1764181440.8025768
+    },
+    {
+      "name": "Collector Integration",
+      "passed": true,
+      "details": "3459 metrics in last 2 min",
+      "timestamp": 1764181440.8035808
+    }
+  ]
+}

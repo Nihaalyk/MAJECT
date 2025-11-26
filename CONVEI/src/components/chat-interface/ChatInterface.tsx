@@ -9,6 +9,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { useConversationMemory } from "../../contexts/ConversationMemoryContext";
 import { useMessageContext } from "../../contexts/MessageContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useBehavioralContext } from "../../contexts/BehavioralContextContext";
 import { AgentRegistry } from "../../agents/AgentRegistry";
 import { Modality } from "@google/genai";
 import { formatMessageTime, generateMessageId } from "../../lib/utils";
@@ -24,6 +25,7 @@ function ChatInterfaceComponent() {
   const { memory, addConversationEntry, getContextualInfo, clearMemory } = useConversationMemory();
   const { messages: contextMessages, addMessage, clearMessages } = useMessageContext();
   const { logout } = useAuth();
+  const { getContextualPrompt } = useBehavioralContext();
   // const { logs } = useLoggerStore(); // Unused for now
   const [currentAgent, setCurrentAgent] = useState<string>(t(AGENT_NAMES.MAIN));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,10 +35,13 @@ function ChatInterfaceComponent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const agentRegistryRef = useRef<AgentRegistry | null>(null);
 
+  // Get behavioral context prompt
+  const behavioralContextPrompt = getContextualPrompt();
+
   // Initialize agent registry with memoization
   const agentRegistry = useMemo(() => {
-    return new AgentRegistry(memory, language, getContextualInfo);
-  }, [memory, language, getContextualInfo]);
+    return new AgentRegistry(memory, language, getContextualInfo, behavioralContextPrompt);
+  }, [memory, language, getContextualInfo, behavioralContextPrompt]);
 
   useEffect(() => {
     agentRegistryRef.current = agentRegistry;
@@ -49,6 +54,13 @@ function ChatInterfaceComponent() {
       agentRegistryRef.current.updateLanguage(language);
     }
   }, [language]);
+
+  // Update behavioral context when it changes
+  useEffect(() => {
+    if (agentRegistryRef.current && behavioralContextPrompt) {
+      agentRegistryRef.current.updateBehavioralContext(behavioralContextPrompt);
+    }
+  }, [behavioralContextPrompt]);
 
   // Update welcome message when language changes
   useEffect(() => {
@@ -92,7 +104,7 @@ function ChatInterfaceComponent() {
         { functionDeclarations: agentRegistryRef.current.getFunctionDeclarations() },
       ],
     });
-  }, [setConfig, setModel, isInitialized, language, agentRegistry]);
+  }, [setConfig, setModel, isInitialized, language, agentRegistry, behavioralContextPrompt]);
 
   // Handle tool calls with enhanced visualization
   useEffect(() => {
@@ -111,6 +123,11 @@ function ChatInterfaceComponent() {
           return;
         }
         const { name, args } = functionCall;
+        
+        // Debug logging for tool calls
+        if (process.env.NODE_ENV === 'development') {
+          console.log("🔧 Tool call received:", { name, args, fullToolCall: toolCall });
+        }
 
         // Hide welcome section when any tool call happens
         if (showWelcome) {
@@ -143,12 +160,14 @@ function ChatInterfaceComponent() {
 
         // Process through agent registry
         const toolArgs = args as Record<string, unknown>;
+        // Get or create session ID for behavioral context
+        const sessionId = memory.sessionData.sessionId || `convei_session_${Date.now()}`;
         const agentContext = {
           language,
           userInput: (toolArgs.question || toolArgs.origin || "") as string,
           conversationHistory: memory.currentContext.conversationHistory,
           memory,
-          sessionId: memory.sessionData.sessionId
+          sessionId: sessionId
         };
 
         const agentResult = await agentRegistryRef.current!.processToolCall(toolCall, agentContext);
@@ -849,4 +868,4 @@ function ChatInterfaceComponent() {
   );
 }
 
-export const ChatInterface = memo(ChatInterfaceComponent);
+export default ChatInterfaceComponent;

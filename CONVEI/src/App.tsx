@@ -19,9 +19,10 @@ import "./App.scss";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
-import { ConversationMemoryProvider } from "./contexts/ConversationMemoryContext";
+import { ConversationMemoryProvider, useConversationMemory } from "./contexts/ConversationMemoryContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { MessageProvider } from "./contexts/MessageContext";
+import { BehavioralContextProvider } from "./contexts/BehavioralContextContext";
 import Login from "./components/login/Login";
 import ErrorBoundary from "./components/error-boundary/ErrorBoundary";
 import cn from "classnames";
@@ -29,7 +30,7 @@ import { LiveClientOptions } from "./types";
 
 // Lazy load heavy components
 const EnhancedConsole = lazy(() => import("./components/enhanced-console/EnhancedConsole").then(module => ({ default: module.EnhancedConsole })));
-const ChatInterface = lazy(() => import("./components/chat-interface/ChatInterface").then(module => ({ default: module.ChatInterface })));
+const ChatInterface = lazy(() => import("./components/chat-interface/ChatInterface"));
 const ControlTray = lazy(() => import("./components/control-tray/ControlTray"));
 
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY as string;
@@ -49,6 +50,16 @@ const LoadingFallback = () => (
   </div>
 );
 
+// Wrapper component to access conversation memory for behavioral context
+function BehavioralContextWrapper({ children }: { children: React.ReactNode }) {
+  const { memory } = useConversationMemory();
+  return (
+    <BehavioralContextProvider sessionId={memory.sessionData.sessionId}>
+      {children}
+    </BehavioralContextProvider>
+  );
+}
+
 // Main app content component
 function AppContent() {
   // this video reference is used for displaying the active stream, whether that is the webcam or screen capture
@@ -64,7 +75,8 @@ function AppContent() {
           <LanguageProvider>
             <ConversationMemoryProvider>
               <MessageProvider>
-                <LiveAPIProvider options={apiOptions}>
+                <BehavioralContextWrapper>
+                  <LiveAPIProvider options={apiOptions}>
                   <Suspense fallback={<LoadingFallback />}>
                     <div className="streaming-console">
                       <main>
@@ -94,6 +106,7 @@ function AppContent() {
                     </div>
                   </Suspense>
                 </LiveAPIProvider>
+                </BehavioralContextWrapper>
               </MessageProvider>
             </ConversationMemoryProvider>
           </LanguageProvider>

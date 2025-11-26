@@ -3,7 +3,7 @@
  * Maintains conversation state and memory across the session
  */
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 
 export interface ConversationMemory {
   // User preferences
@@ -55,7 +55,25 @@ const initialMemory: ConversationMemory = {
     pendingInfo: {},
   },
   sessionData: {
-    sessionId: `session-${Date.now()}`,
+    // Use a persistent session ID stored in localStorage, or find active session from FUSION
+    sessionId: (() => {
+      // First, try localStorage
+      const stored = localStorage.getItem('convei_session_id');
+      if (stored) {
+        const sessionTime = parseInt(stored.split('_').pop() || '0');
+        const oneHourAgo = Date.now() - 3600000;
+        if (sessionTime > oneHourAgo) {
+          return stored;
+        }
+      }
+      
+      // If no valid stored session, try to find active session from FUSION API
+      // This is async, so we'll do it in useEffect instead
+      // For now, create a new one but we'll update it
+      const newSessionId = `convei_session_${Date.now()}`;
+      localStorage.setItem('convei_session_id', newSessionId);
+      return newSessionId;
+    })(),
     startTime: new Date(),
     totalInteractions: 0,
   },
@@ -63,6 +81,71 @@ const initialMemory: ConversationMemory = {
 
 export const ConversationMemoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [memory, setMemory] = useState<ConversationMemory>(initialMemory);
+  
+  // Try to find active session from FUSION API on mount
+  useEffect(() => {
+    const findActiveSession = async () => {
+      try {
+        const fusionApiUrl = process.env.REACT_APP_FUSION_API_URL || 'http://localhost:8083';
+        const currentSessionId = memory.sessionData.sessionId;
+        
+        // Check if current session has data
+        const response = await fetch(
+          `${fusionApiUrl}/api/metrics/current/${currentSessionId}`,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+        );
+        
+        // If current session has no data, try to find one that does
+        if (!response.ok || response.status === 404) {
+          // The collector is likely using a session from the last hour
+          // Try to find it by checking recent session IDs
+          const oneHourAgo = Date.now() - 3600000;
+          let foundSession = null;
+          
+          // Check sessions in 1-minute intervals over the last hour
+          for (let offset = 0; offset < 60; offset++) {
+            const testTime = oneHourAgo + (offset * 60000);
+            const testSessionId = `convei_session_${testTime}`;
+            
+            try {
+              const testResponse = await fetch(
+                `${fusionApiUrl}/api/metrics/current/${testSessionId}`,
+                { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+              );
+              
+              if (testResponse.ok) {
+                foundSession = testSessionId;
+                break;
+              }
+            } catch (e) {
+              // Continue searching
+            }
+          }
+          
+          // If we found a session with data, use it
+          if (foundSession) {
+            console.log('🔑 Found active session with data:', foundSession);
+            localStorage.setItem('convei_session_id', foundSession);
+            setMemory(prev => ({
+              ...prev,
+              sessionData: {
+                ...prev.sessionData,
+                sessionId: foundSession
+              }
+            }));
+          } else {
+            console.log('🔑 No active session found, using:', currentSessionId);
+          }
+        } else {
+          console.log('🔑 Current session has data:', currentSessionId);
+        }
+      } catch (error) {
+        console.warn('Could not find active session from FUSION:', error);
+      }
+    };
+    
+    findActiveSession();
+  }, []); // Only run once on mount
 
   const updateMemory = useCallback((updates: Partial<ConversationMemory>) => {
     setMemory(prev => {

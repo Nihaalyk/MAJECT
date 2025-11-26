@@ -196,9 +196,9 @@ class UnifiedBehavioralAnalyzer:
             self._cached_video_state = video_state.copy()
             self._cached_audio_state = audio_state.copy()
             
-            # Collect combined data (throttled - only every 10 updates)
+            # Collect combined data (throttled - only every 5 updates for higher frequency)
             self._state_update_counter += 1
-            if self._state_update_counter >= 10:
+            if self._state_update_counter >= 5:  # Increased frequency (was 10)
                 self._collect_combined_data()
                 self._state_update_counter = 0
     

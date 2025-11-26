@@ -1,0 +1,56 @@
+{
+  "beval": {
+    "url": "http://localhost:5000",
+    "use_socketio": true,
+    "poll_interval": 1.0
+  },
+  "database": {
+    "path": "fusion.db",
+    "type": "sqlite"
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8083,
+    "cors_origins": [
+      "http://localhost:3000",
+      "http://localhost:8080"
+    ]
+  },
+  "convei": {
+    "api_url": "http://localhost:3000",
+    "poll_interval": 2000
+  },
+  "metrics": {
+    "collection_interval": 1.0,
+    "context_window": 30,
+    "aggregation_window": 60
+  }
+}
+
+
+    "url": "http://localhost:5000",
+    "use_socketio": true,
+    "poll_interval": 1.0
+  },
+  "database": {
+    "path": "fusion.db",
+    "type": "sqlite"
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8083,
+    "cors_origins": [
+      "http://localhost:3000",
+      "http://localhost:8080"
+    ]
+  },
+  "convei": {
+    "api_url": "http://localhost:3000",
+    "poll_interval": 2000
+  },
+  "metrics": {
+    "collection_interval": 1.0,
+    "context_window": 30,
+    "aggregation_window": 60
+  }
+}
