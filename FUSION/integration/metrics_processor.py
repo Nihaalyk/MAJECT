@@ -1,57 +1,83 @@
 """
-Metrics Processor
-Processes and aggregates behavioral metrics for CONVEI context
+Advanced Metrics Processor
+Deep emotional intelligence processing for human-like understanding
 """
 
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
+from collections import Counter
 from db.models import MetricsDatabase
 
 logger = logging.getLogger(__name__)
 
 
 class MetricsProcessor:
-    """Processes metrics for CONVEI context"""
+    """Advanced processor for emotionally intelligent CONVEI context"""
+    
+    # Emotional complexity mapping
+    EMOTION_VALENCE = {
+        'happy': 1.0,
+        'surprise': 0.5,
+        'neutral': 0.0,
+        'sad': -0.5,
+        'fear': -0.7,
+        'angry': -0.8,
+        'disgust': -0.6
+    }
+    
+    # Emotion intensity indicators
+    INTENSITY_THRESHOLDS = {
+        'attention_high': 75,
+        'attention_low': 35,
+        'sentiment_strong': 0.4,
+        'engagement_high': 0.7
+    }
     
     def __init__(self, db: MetricsDatabase):
         self.db = db
+        self.emotional_memory: List[Dict[str, Any]] = []
     
     def get_context_for_convei(self, session_id: str, time_window: int = 30) -> Dict[str, Any]:
         """
-        Get formatted context for CONVEI agents
-        
-        Args:
-            session_id: Session identifier
-            time_window: Time window in seconds to look back
-        
-        Returns:
-            Dictionary with behavioral context formatted for CONVEI
+        Get emotionally intelligent context for CONVEI
         """
         try:
             current_time = datetime.now().timestamp()
             start_time = current_time - time_window
             
-            # Get current metrics (most recent, regardless of time window)
+            # Get current metrics
             current = self.db.get_current_metrics(session_id)
             
-            # If no current metrics, try to get the most recent one from any time
+            # Fallback to most recent if none in window
             if not current:
-                # Get the absolute most recent metric for this session
-                metrics_range_all = self.db.get_metrics_range(session_id, 0, current_time)
-                if metrics_range_all:
-                    # Use the most recent one
-                    current = metrics_range_all[-1]
+                all_metrics = self.db.get_metrics_range(session_id, 0, current_time)
+                if all_metrics:
+                    current = all_metrics[-1]
             
-            # Get metrics for time window (for trends)
+            # Get historical for trends
             metrics_range = self.db.get_metrics_range(session_id, start_time, current_time)
             
-            # Process and format
+            # Deep emotional analysis
+            emotional_state = self._analyze_emotional_state(current)
+            emotional_trends = self._analyze_emotional_trends(metrics_range)
+            behavioral_patterns = self._detect_behavioral_patterns(metrics_range)
+            conversation_guidance = self._generate_conversation_guidance(emotional_state, emotional_trends)
+            
             context = {
-                "current_state": self._format_current_state(current),
-                "recent_trends": self._calculate_trends(metrics_range),
-                "behavioral_insights": self._generate_insights(current, metrics_range),
-                "recommendations": self._generate_recommendations(current, metrics_range)
+                "current_state": self._format_current_state(current, emotional_state),
+                "recent_trends": emotional_trends,
+                "behavioral_patterns": behavioral_patterns,
+                "behavioral_insights": self._generate_deep_insights(current, metrics_range, emotional_state),
+                "recommendations": self._generate_smart_recommendations(emotional_state, emotional_trends, behavioral_patterns),
+                "conversation_guidance": conversation_guidance,
+                "emotional_intelligence": {
+                    "primary_emotion": emotional_state.get('primary_emotion', 'neutral'),
+                    "emotional_intensity": emotional_state.get('intensity', 'moderate'),
+                    "emotional_valence": emotional_state.get('valence', 0),
+                    "suggested_approach": conversation_guidance.get('approach', 'neutral'),
+                    "empathy_level_needed": emotional_state.get('empathy_needed', 'moderate')
+                }
             }
             
             return context
@@ -59,19 +85,313 @@ class MetricsProcessor:
             logger.error(f"Error getting context for CONVEI: {e}")
             return {}
     
-    def _format_current_state(self, current: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """Format current state for CONVEI"""
+    def _analyze_emotional_state(self, current: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Deep analysis of current emotional state"""
+        if not current:
+            return {
+                'primary_emotion': 'neutral',
+                'intensity': 'mild',
+                'valence': 0,
+                'empathy_needed': 'low',
+                'complexity': 'simple'
+            }
+        
+        emotion = current.get("unified_emotion", "neutral").lower()
+        sentiment = current.get("unified_sentiment", 0.0)
+        attention_score = current.get("attention_score", 50.0)
+        fatigue = current.get("unified_fatigue", "Normal")
+        engagement = current.get("engagement_level", "medium")
+        
+        # Calculate emotional valence
+        valence = self.EMOTION_VALENCE.get(emotion, 0)
+        
+        # Adjust valence with sentiment
+        combined_valence = (valence + sentiment) / 2
+        
+        # Determine intensity
+        intensity = 'mild'
+        if abs(sentiment) > self.INTENSITY_THRESHOLDS['sentiment_strong']:
+            intensity = 'strong'
+        elif attention_score > self.INTENSITY_THRESHOLDS['attention_high'] or attention_score < self.INTENSITY_THRESHOLDS['attention_low']:
+            intensity = 'strong'
+        elif abs(sentiment) > 0.2:
+            intensity = 'moderate'
+        
+        # Determine empathy level needed
+        empathy_needed = 'low'
+        if emotion in ['sad', 'fear', 'angry']:
+            empathy_needed = 'high'
+            if intensity == 'strong':
+                empathy_needed = 'very_high'
+        elif emotion in ['surprise', 'happy'] and intensity == 'strong':
+            empathy_needed = 'moderate'
+        
+        # Emotional complexity
+        complexity = 'simple'
+        if fatigue != 'Normal' and emotion != 'neutral':
+            complexity = 'complex'
+        if emotion in ['sad', 'angry'] and sentiment > 0:
+            complexity = 'mixed'  # Mixed signals
+        
+        return {
+            'primary_emotion': emotion,
+            'intensity': intensity,
+            'valence': combined_valence,
+            'empathy_needed': empathy_needed,
+            'complexity': complexity,
+            'fatigue_factor': fatigue != 'Normal',
+            'engagement_level': engagement,
+            'attention_quality': 'high' if attention_score > 70 else 'low' if attention_score < 40 else 'moderate'
+        }
+    
+    def _analyze_emotional_trends(self, metrics_range: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze emotional patterns over time"""
+        if not metrics_range or len(metrics_range) < 2:
+            return {
+                'emotion_stability': 'unknown',
+                'sentiment_direction': 'stable',
+                'attention_pattern': 'unknown',
+                'emotional_arc': 'flat'
+            }
+        
+        emotions = [m.get("unified_emotion", "neutral") for m in metrics_range]
+        sentiments = [m.get("unified_sentiment", 0) for m in metrics_range if m.get("unified_sentiment") is not None]
+        attention_scores = [m.get("attention_score", 50) for m in metrics_range if m.get("attention_score") is not None]
+        
+        # Emotion stability
+        unique_emotions = len(set(emotions))
+        stability = 'stable' if unique_emotions <= 2 else 'moderate' if unique_emotions <= 4 else 'volatile'
+        
+        # Sentiment direction
+        sentiment_direction = 'stable'
+        if len(sentiments) >= 3:
+            first_half = sum(sentiments[:len(sentiments)//2]) / max(len(sentiments)//2, 1)
+            second_half = sum(sentiments[len(sentiments)//2:]) / max(len(sentiments) - len(sentiments)//2, 1)
+            if second_half > first_half + 0.2:
+                sentiment_direction = 'improving'
+            elif second_half < first_half - 0.2:
+                sentiment_direction = 'declining'
+        
+        # Attention pattern
+        attention_pattern = 'consistent'
+        if len(attention_scores) >= 3:
+            variance = sum((x - sum(attention_scores)/len(attention_scores))**2 for x in attention_scores) / len(attention_scores)
+            if variance > 400:
+                attention_pattern = 'fluctuating'
+            elif attention_scores[-1] < attention_scores[0] - 15:
+                attention_pattern = 'declining'
+            elif attention_scores[-1] > attention_scores[0] + 15:
+                attention_pattern = 'improving'
+        
+        # Emotional arc (narrative)
+        dominant_first = Counter(emotions[:len(emotions)//2]).most_common(1)
+        dominant_second = Counter(emotions[len(emotions)//2:]).most_common(1)
+        
+        emotional_arc = 'flat'
+        if dominant_first and dominant_second:
+            first_emotion = dominant_first[0][0]
+            second_emotion = dominant_second[0][0]
+            first_valence = self.EMOTION_VALENCE.get(first_emotion, 0)
+            second_valence = self.EMOTION_VALENCE.get(second_emotion, 0)
+            
+            if second_valence > first_valence + 0.3:
+                emotional_arc = 'brightening'
+            elif second_valence < first_valence - 0.3:
+                emotional_arc = 'darkening'
+            elif second_emotion != first_emotion:
+                emotional_arc = 'shifting'
+        
+        return {
+            'emotion_stability': stability,
+            'sentiment_direction': sentiment_direction,
+            'attention_pattern': attention_pattern,
+            'emotional_arc': emotional_arc,
+            'dominant_emotion': Counter(emotions).most_common(1)[0][0] if emotions else 'neutral',
+            'emotion_sequence': emotions[-5:] if len(emotions) >= 5 else emotions
+        }
+    
+    def _detect_behavioral_patterns(self, metrics_range: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Detect behavioral patterns for deeper understanding"""
+        if not metrics_range or len(metrics_range) < 3:
+            return {'patterns_detected': False}
+        
+        patterns = {
+            'patterns_detected': True,
+            'micro_expressions': [],
+            'engagement_drops': [],
+            'stress_indicators': [],
+            'positive_moments': []
+        }
+        
+        for i, metric in enumerate(metrics_range):
+            emotion = metric.get("unified_emotion", "neutral")
+            fatigue = metric.get("unified_fatigue", "Normal")
+            attention = metric.get("attention_score", 50)
+            sentiment = metric.get("unified_sentiment", 0)
+            
+            # Detect stress indicators
+            if fatigue in ['Moderate', 'Severe'] or (emotion in ['angry', 'fear'] and attention > 60):
+                patterns['stress_indicators'].append({
+                    'index': i,
+                    'type': 'stress',
+                    'factors': [fatigue, emotion]
+                })
+            
+            # Detect engagement drops
+            if i > 0:
+                prev_attention = metrics_range[i-1].get("attention_score", 50)
+                if attention < prev_attention - 20:
+                    patterns['engagement_drops'].append({
+                        'index': i,
+                        'drop_amount': prev_attention - attention
+                    })
+            
+            # Detect positive moments
+            if emotion == 'happy' or sentiment > 0.4:
+                patterns['positive_moments'].append({
+                    'index': i,
+                    'emotion': emotion,
+                    'sentiment': sentiment
+                })
+        
+        # Summarize patterns
+        patterns['summary'] = {
+            'stress_count': len(patterns['stress_indicators']),
+            'engagement_drops_count': len(patterns['engagement_drops']),
+            'positive_moments_count': len(patterns['positive_moments']),
+            'overall_health': self._assess_conversation_health(patterns)
+        }
+        
+        return patterns
+    
+    def _assess_conversation_health(self, patterns: Dict[str, Any]) -> str:
+        """Assess overall conversation health"""
+        stress = len(patterns.get('stress_indicators', []))
+        drops = len(patterns.get('engagement_drops', []))
+        positive = len(patterns.get('positive_moments', []))
+        
+        if positive > stress + drops:
+            return 'positive'
+        elif stress > 3 or drops > 3:
+            return 'concerning'
+        elif stress > 0 or drops > 0:
+            return 'mixed'
+        return 'neutral'
+    
+    def _generate_conversation_guidance(self, emotional_state: Dict[str, Any], trends: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate smart conversation guidance"""
+        emotion = emotional_state.get('primary_emotion', 'neutral')
+        intensity = emotional_state.get('intensity', 'moderate')
+        empathy_needed = emotional_state.get('empathy_needed', 'moderate')
+        arc = trends.get('emotional_arc', 'flat')
+        
+        guidance = {
+            'approach': 'neutral',
+            'tone': 'warm',
+            'pace': 'normal',
+            'techniques': [],
+            'avoid': []
+        }
+        
+        # Emotion-specific guidance
+        if emotion == 'sad':
+            guidance['approach'] = 'supportive'
+            guidance['tone'] = 'gentle'
+            guidance['pace'] = 'slow'
+            guidance['techniques'] = [
+                'Validate feelings first',
+                'Use phrases like "I can see..." or "It sounds like..."',
+                'Give space for silence',
+                'Ask open questions gently'
+            ]
+            guidance['avoid'] = [
+                'Rushing to solutions',
+                'Minimizing their feelings',
+                'Being overly cheerful'
+            ]
+        elif emotion == 'angry':
+            guidance['approach'] = 'calm_presence'
+            guidance['tone'] = 'understanding'
+            guidance['pace'] = 'measured'
+            guidance['techniques'] = [
+                'Acknowledge frustration immediately',
+                'Use "I understand" statements',
+                'Let them vent if needed',
+                'Find common ground'
+            ]
+            guidance['avoid'] = [
+                'Defensive responses',
+                'Matching their anger',
+                'Dismissing concerns'
+            ]
+        elif emotion == 'fear':
+            guidance['approach'] = 'reassuring'
+            guidance['tone'] = 'steady'
+            guidance['pace'] = 'calm'
+            guidance['techniques'] = [
+                'Break things into small steps',
+                'Provide clear information',
+                'Offer consistent support',
+                'Use grounding language'
+            ]
+            guidance['avoid'] = [
+                'Adding complexity',
+                'Dismissing fears',
+                'Overwhelming with information'
+            ]
+        elif emotion == 'happy':
+            guidance['approach'] = 'celebratory'
+            guidance['tone'] = 'enthusiastic'
+            guidance['pace'] = 'energetic'
+            guidance['techniques'] = [
+                'Match their energy',
+                'Celebrate with them',
+                'Ask follow-up questions',
+                'Share in their joy'
+            ]
+            guidance['avoid'] = [
+                'Being too reserved',
+                'Changing subject abruptly'
+            ]
+        elif emotion == 'surprise':
+            guidance['approach'] = 'curious'
+            guidance['tone'] = 'engaged'
+            guidance['pace'] = 'responsive'
+            guidance['techniques'] = [
+                'Explore what surprised them',
+                'Show genuine interest',
+                'Give them time to process'
+            ]
+        
+        # Intensity adjustments
+        if intensity == 'strong':
+            guidance['techniques'].append('Give extra space for expression')
+            guidance['techniques'].append('Respond with heightened empathy')
+        
+        # Arc-based adjustments
+        if arc == 'brightening':
+            guidance['techniques'].append('Note and acknowledge the positive shift')
+        elif arc == 'darkening':
+            guidance['techniques'].append('Gently check in on how they\'re doing')
+        
+        return guidance
+    
+    def _format_current_state(self, current: Optional[Dict[str, Any]], emotional_state: Dict[str, Any]) -> Dict[str, Any]:
+        """Format current state with emotional intelligence"""
         if not current:
             return {
                 "emotion": "neutral",
                 "attention": "Unknown",
                 "engagement": "medium",
                 "sentiment": 0.0,
-                "confidence": "medium"
+                "confidence": "medium",
+                "emotional_context": "No data available"
             }
         
+        emotion = current.get("unified_emotion", "neutral")
+        
         return {
-            "emotion": current.get("unified_emotion", "neutral"),
+            "emotion": emotion,
             "attention": current.get("unified_attention", "Unknown"),
             "attention_score": current.get("attention_score", 50.0),
             "engagement": current.get("engagement_level", "medium"),
@@ -79,153 +399,125 @@ class MetricsProcessor:
             "confidence": current.get("unified_confidence", "medium"),
             "fatigue": current.get("unified_fatigue", "Normal"),
             "posture": current.get("unified_posture", "Unknown"),
-            "movement": current.get("unified_movement", "Unknown")
+            "movement": current.get("unified_movement", "Unknown"),
+            # Emotional intelligence additions
+            "emotional_intensity": emotional_state.get('intensity', 'moderate'),
+            "empathy_level_needed": emotional_state.get('empathy_needed', 'moderate'),
+            "emotional_complexity": emotional_state.get('complexity', 'simple'),
+            "emotional_context": self._create_emotional_context_string(emotion, emotional_state)
         }
     
-    def _calculate_trends(self, metrics_range: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Calculate trends from metrics range"""
-        if not metrics_range:
-            return {}
+    def _create_emotional_context_string(self, emotion: str, emotional_state: Dict[str, Any]) -> str:
+        """Create human-readable emotional context"""
+        intensity = emotional_state.get('intensity', 'moderate')
+        empathy = emotional_state.get('empathy_needed', 'moderate')
         
-        # Extract values
-        emotions = [m.get("unified_emotion") for m in metrics_range if m.get("unified_emotion")]
-        sentiments = [m.get("unified_sentiment") for m in metrics_range if m.get("unified_sentiment") is not None]
-        attention_scores = [m.get("attention_score") for m in metrics_range if m.get("attention_score") is not None]
-        
-        # Calculate trends
-        trends = {
-            "emotion_trend": self._get_dominant_emotion(emotions),
-            "sentiment_trend": self._calculate_sentiment_trend(sentiments),
-            "attention_trend": self._calculate_attention_trend(attention_scores),
-            "stability": self._calculate_stability(metrics_range)
+        contexts = {
+            'happy': f"User is expressing {intensity} happiness - share in their joy!",
+            'sad': f"User appears {intensity}ly sad - approach with gentle empathy",
+            'angry': f"User shows {intensity} frustration - stay calm and validate",
+            'fear': f"User seems {intensity}ly anxious - provide reassurance",
+            'surprise': f"User is {intensity}ly surprised - explore what caught their attention",
+            'neutral': "User is calm and attentive - good opportunity for engagement",
+            'disgust': f"User shows {intensity} discomfort - check what's bothering them"
         }
         
-        return trends
+        return contexts.get(emotion, "User's emotional state is nuanced - pay close attention")
     
-    def _get_dominant_emotion(self, emotions: List[str]) -> str:
-        """Get most common emotion"""
-        if not emotions:
-            return "neutral"
-        from collections import Counter
-        return Counter(emotions).most_common(1)[0][0]
-    
-    def _calculate_sentiment_trend(self, sentiments: List[float]) -> str:
-        """Calculate sentiment trend"""
-        if len(sentiments) < 2:
-            return "stable"
-        
-        recent_avg = sum(sentiments[-5:]) / len(sentiments[-5:])
-        earlier_avg = sum(sentiments[:5]) / len(sentiments[:5]) if len(sentiments) >= 10 else sentiments[0]
-        
-        if recent_avg > earlier_avg + 0.2:
-            return "improving"
-        elif recent_avg < earlier_avg - 0.2:
-            return "declining"
-        else:
-            return "stable"
-    
-    def _calculate_attention_trend(self, attention_scores: List[float]) -> str:
-        """Calculate attention trend"""
-        if len(attention_scores) < 2:
-            return "stable"
-        
-        recent_avg = sum(attention_scores[-5:]) / len(attention_scores[-5:])
-        earlier_avg = sum(attention_scores[:5]) / len(attention_scores[:5]) if len(attention_scores) >= 10 else attention_scores[0]
-        
-        if recent_avg > earlier_avg + 10:
-            return "improving"
-        elif recent_avg < earlier_avg - 10:
-            return "declining"
-        else:
-            return "stable"
-    
-    def _calculate_stability(self, metrics_range: List[Dict[str, Any]]) -> str:
-        """Calculate overall stability"""
-        if len(metrics_range) < 5:
-            return "unknown"
-        
-        # Check variance in key metrics
-        emotions = [m.get("unified_emotion") for m in metrics_range]
-        unique_emotions = len(set(emotions))
-        
-        if unique_emotions <= 2:
-            return "stable"
-        elif unique_emotions <= 4:
-            return "moderate"
-        else:
-            return "unstable"
-    
-    def _generate_insights(self, current: Optional[Dict[str, Any]], metrics_range: List[Dict[str, Any]]) -> List[str]:
-        """Generate behavioral insights"""
+    def _generate_deep_insights(self, current: Optional[Dict[str, Any]], metrics_range: List[Dict[str, Any]], emotional_state: Dict[str, Any]) -> List[str]:
+        """Generate deep behavioral insights"""
         insights = []
         
         if not current:
-            return ["No behavioral data available"]
+            return ["Awaiting behavioral data for insights"]
         
-        # Emotion insights
         emotion = current.get("unified_emotion", "neutral")
-        if emotion in ["sad", "angry", "fear"]:
-            insights.append(f"User appears to be experiencing {emotion} emotions")
+        intensity = emotional_state.get('intensity', 'moderate')
+        complexity = emotional_state.get('complexity', 'simple')
+        attention_quality = emotional_state.get('attention_quality', 'moderate')
+        
+        # Emotion-specific insights
+        if emotion in ['sad', 'fear', 'angry']:
+            insights.append(f"User is experiencing {emotion} with {intensity} intensity - emotional support may be beneficial")
+        elif emotion == 'happy':
+            insights.append(f"User is in a positive emotional state - great moment for meaningful connection")
+        
+        # Complexity insights
+        if complexity == 'mixed':
+            insights.append("User is showing mixed emotional signals - there may be underlying concerns")
+        elif complexity == 'complex':
+            insights.append("User's emotional state is complex - fatigue may be affecting their mood")
         
         # Attention insights
-        attention_score = current.get("attention_score", 50.0)
-        if attention_score < 40:
-            insights.append("User attention level is low - may be distracted")
+        attention_score = current.get("attention_score", 50)
+        if attention_score < 35:
+            insights.append("User attention is low - consider re-engaging or checking if they need a break")
         elif attention_score > 80:
-            insights.append("User is highly focused and engaged")
-        
-        # Engagement insights
-        engagement = current.get("engagement_level", "medium")
-        if engagement == "low":
-            insights.append("User engagement is low - consider adjusting conversation approach")
+            insights.append("User is highly focused - they're deeply engaged in the conversation")
         
         # Fatigue insights
         fatigue = current.get("unified_fatigue", "Normal")
         if fatigue in ["Moderate", "Severe"]:
-            insights.append(f"User shows signs of {fatigue.lower()} fatigue")
+            insights.append(f"User shows {fatigue.lower()} fatigue - shorter, gentler interactions recommended")
         
-        # Sentiment insights
-        sentiment = current.get("unified_sentiment", 0.0)
-        if sentiment < -0.3:
-            insights.append("User sentiment is negative - may need support or clarification")
-        elif sentiment > 0.3:
-            insights.append("User sentiment is positive - conversation is going well")
-        
-        return insights if insights else ["No significant behavioral patterns detected"]
-    
-    def _generate_recommendations(self, current: Optional[Dict[str, Any]], metrics_range: List[Dict[str, Any]]) -> List[str]:
-        """Generate recommendations for CONVEI agent"""
-        recommendations = []
-        
-        if not current:
-            return ["Continue normal conversation"]
-        
-        # Attention-based recommendations
-        attention_score = current.get("attention_score", 50.0)
-        if attention_score < 40:
-            recommendations.append("User appears distracted - try to re-engage with a direct question")
-        
-        # Engagement-based recommendations
+        # Engagement insights
         engagement = current.get("engagement_level", "medium")
         if engagement == "low":
-            recommendations.append("Consider using more engaging language or asking follow-up questions")
+            insights.append("Engagement is dropping - try asking an open question or changing topic")
+        elif engagement == "high":
+            insights.append("User is highly engaged - they're invested in this conversation")
         
-        # Emotion-based recommendations
-        emotion = current.get("unified_emotion", "neutral")
-        if emotion == "sad":
-            recommendations.append("User seems sad - show empathy and offer support")
-        elif emotion == "angry":
-            recommendations.append("User appears frustrated - be patient and understanding")
+        # Pattern insights from history
+        if len(metrics_range) >= 5:
+            emotions = [m.get("unified_emotion", "neutral") for m in metrics_range[-5:]]
+            if len(set(emotions)) >= 4:
+                insights.append("User's emotions have been variable - they may be processing complex feelings")
+        
+        return insights if insights else ["User appears stable - continue with natural conversation flow"]
+    
+    def _generate_smart_recommendations(self, emotional_state: Dict[str, Any], trends: Dict[str, Any], patterns: Dict[str, Any]) -> List[str]:
+        """Generate smart, actionable recommendations"""
+        recommendations = []
+        
+        emotion = emotional_state.get('primary_emotion', 'neutral')
+        intensity = emotional_state.get('intensity', 'moderate')
+        empathy_needed = emotional_state.get('empathy_needed', 'moderate')
+        arc = trends.get('emotional_arc', 'flat')
+        
+        # Core emotional recommendations
+        if emotion == 'sad' and empathy_needed in ['high', 'very_high']:
+            recommendations.append("🫂 Lead with empathy - acknowledge their feelings before anything else")
+            recommendations.append("🗣️ Use validating phrases: 'I can see you're going through something...'")
+        elif emotion == 'angry':
+            recommendations.append("😌 Stay calm and don't match their frustration")
+            recommendations.append("👂 Let them express fully before responding")
+        elif emotion == 'fear':
+            recommendations.append("🤝 Be a steady, reassuring presence")
+            recommendations.append("📋 Break complex things into simple steps")
+        elif emotion == 'happy':
+            recommendations.append("🎉 Match their positive energy!")
+            recommendations.append("❓ Ask about what's making them happy")
+        
+        # Intensity-based recommendations
+        if intensity == 'strong':
+            recommendations.append("💡 Give extra space for emotional expression")
+        
+        # Trend-based recommendations
+        if arc == 'darkening':
+            recommendations.append("🔍 Check in: 'How are you feeling about all this?'")
+        elif arc == 'brightening':
+            recommendations.append("✨ Acknowledge the positive shift you're seeing")
+        
+        # Pattern-based recommendations
+        if patterns.get('patterns_detected'):
+            summary = patterns.get('summary', {})
+            if summary.get('stress_count', 0) > 2:
+                recommendations.append("⚠️ Multiple stress indicators detected - consider offering a break")
+            if summary.get('engagement_drops_count', 0) > 2:
+                recommendations.append("📉 Engagement dropping - try a more engaging approach")
         
         # Fatigue-based recommendations
-        fatigue = current.get("unified_fatigue", "Normal")
-        if fatigue in ["Moderate", "Severe"]:
-            recommendations.append("User shows fatigue - consider shorter responses or offering a break")
+        if emotional_state.get('fatigue_factor'):
+            recommendations.append("😴 User seems tired - keep responses concise and gentle")
         
-        # Sentiment-based recommendations
-        sentiment = current.get("unified_sentiment", 0.0)
-        if sentiment < -0.3:
-            recommendations.append("Negative sentiment detected - clarify understanding and address concerns")
-        
-        return recommendations if recommendations else ["Continue with current conversation approach"]
-
+        return recommendations if recommendations else ["👍 Continue with your natural, empathetic approach"]

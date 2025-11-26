@@ -1,9 +1,9 @@
 /**
  * Behavioral Context Context
- * Provides real-time behavioral metrics from FUSION to CONVEI agents
+ * Advanced emotional intelligence with memory and deep understanding
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 
 export interface BehavioralState {
   emotion: string;
@@ -14,12 +14,33 @@ export interface BehavioralState {
   fatigue?: string;
   posture?: string;
   movement?: string;
+  attentionScore?: number;
+  emotionalIntensity?: string;
+  empathyNeeded?: string;
+}
+
+export interface EmotionalMemoryEntry {
+  timestamp: number;
+  emotion: string;
+  sentiment: number;
+  intensity: string;
+  trigger?: string;
 }
 
 export interface BehavioralContextData {
   currentState: BehavioralState;
   insights: string[];
   recommendations: string[];
+  conversationGuidance?: {
+    approach: string;
+    tone: string;
+    pace: string;
+    techniques: string[];
+    avoid: string[];
+  };
+  emotionalMemory: EmotionalMemoryEntry[];
+  emotionalTrend: 'improving' | 'stable' | 'declining' | 'volatile' | 'unknown';
+  dominantEmotion: string;
   isAvailable: boolean;
   lastUpdated: Date | null;
   error: string | null;
@@ -29,13 +50,16 @@ interface BehavioralContextType {
   behavioralData: BehavioralContextData;
   refreshContext: () => Promise<void>;
   getContextualPrompt: () => string;
+  recordEmotionalMoment: (emotion: string, trigger?: string) => void;
+  getEmotionalJourneySummary: () => string;
 }
 
 const BehavioralContext = createContext<BehavioralContextType | undefined>(undefined);
 
 const FUSION_API_URL = process.env.REACT_APP_FUSION_API_URL || 'http://localhost:8083';
-const REFRESH_INTERVAL = 1000; // 1 second (increased frequency from 5 seconds)
-const CONTEXT_WINDOW = 30; // 30 seconds of metrics
+const REFRESH_INTERVAL = 800; // 800ms for real-time feel
+const CONTEXT_WINDOW = 30;
+const MAX_EMOTIONAL_MEMORY = 50;
 
 export const BehavioralContextProvider: React.FC<{ 
   children: ReactNode;
@@ -51,41 +75,80 @@ export const BehavioralContextProvider: React.FC<{
     },
     insights: [],
     recommendations: [],
+    emotionalMemory: [],
+    emotionalTrend: 'unknown',
+    dominantEmotion: 'neutral',
     isAvailable: false,
     lastUpdated: null,
     error: null
   });
 
-  const fetchBehavioralContext = useCallback(async () => {
-    if (!sessionId) {
-      // Use a default session or create one
-      const defaultSessionId = `convei_session_${Date.now()}`;
-      try {
-        // Create session in FUSION
-        await fetch(`${FUSION_API_URL}/api/sessions?session_id=${defaultSessionId}`, {
-          method: 'POST'
-        });
-      } catch (e) {
-        // Session creation failed, continue without it
-      }
-    }
+  const emotionalMemoryRef = useRef<EmotionalMemoryEntry[]>([]);
 
-    const activeSessionId = sessionId || `convei_session_${Date.now()}`;
+  const recordEmotionalMoment = useCallback((emotion: string, trigger?: string) => {
+    const entry: EmotionalMemoryEntry = {
+      timestamp: Date.now(),
+      emotion,
+      sentiment: behavioralData.currentState.sentiment,
+      intensity: behavioralData.currentState.emotionalIntensity || 'moderate',
+      trigger
+    };
+    
+    emotionalMemoryRef.current = [
+      ...emotionalMemoryRef.current.slice(-MAX_EMOTIONAL_MEMORY + 1),
+      entry
+    ];
+  }, [behavioralData.currentState.sentiment, behavioralData.currentState.emotionalIntensity]);
+
+  const calculateEmotionalTrend = useCallback((memory: EmotionalMemoryEntry[]): 'improving' | 'stable' | 'declining' | 'volatile' | 'unknown' => {
+    if (memory.length < 3) return 'unknown';
+    
+    const positiveEmotions = ['happy', 'surprise'];
+    const negativeEmotions = ['sad', 'angry', 'fear', 'disgust'];
+    
+    const recentEmotions = memory.slice(-5);
+    const olderEmotions = memory.slice(-10, -5);
+    
+    if (olderEmotions.length === 0) return 'unknown';
+    
+    const recentPositive = recentEmotions.filter(e => positiveEmotions.includes(e.emotion)).length;
+    const olderPositive = olderEmotions.filter(e => positiveEmotions.includes(e.emotion)).length;
+    const recentNegative = recentEmotions.filter(e => negativeEmotions.includes(e.emotion)).length;
+    
+    const uniqueRecent = new Set(recentEmotions.map(e => e.emotion)).size;
+    if (uniqueRecent >= 4) return 'volatile';
+    
+    if (recentPositive > olderPositive) return 'improving';
+    if (recentNegative > 2) return 'declining';
+    return 'stable';
+  }, []);
+
+  const getDominantEmotion = useCallback((memory: EmotionalMemoryEntry[]): string => {
+    if (memory.length === 0) return 'neutral';
+    
+    const counts: Record<string, number> = {};
+    memory.slice(-10).forEach(entry => {
+      counts[entry.emotion] = (counts[entry.emotion] || 0) + 1;
+    });
+    
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral';
+  }, []);
+
+  const fetchBehavioralContext = useCallback(async () => {
+    // Always use "current" to get the latest metrics
+    const activeSessionId = "current";
 
     try {
       const response = await fetch(
         `${FUSION_API_URL}/api/metrics/context/${activeSessionId}?window=${CONTEXT_WINDOW}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Content-Type': 'application/json' }
         }
       );
 
       if (!response.ok) {
         if (response.status === 404) {
-          // No metrics yet, that's okay
           setBehavioralData(prev => ({
             ...prev,
             isAvailable: false,
@@ -98,19 +161,37 @@ export const BehavioralContextProvider: React.FC<{
 
       const data = await response.json();
       
+      const currentEmotion = data.current_state?.emotion || 'neutral';
+      const previousEmotion = behavioralData.currentState.emotion;
+      
+      // Record emotional change
+      if (currentEmotion !== previousEmotion && previousEmotion !== 'neutral') {
+        recordEmotionalMoment(currentEmotion);
+      }
+      
+      const emotionalTrend = calculateEmotionalTrend(emotionalMemoryRef.current);
+      const dominantEmotion = getDominantEmotion(emotionalMemoryRef.current);
+      
       setBehavioralData({
         currentState: {
-          emotion: data.current_state?.emotion || 'neutral',
+          emotion: currentEmotion,
           attention: data.current_state?.attention || 'Unknown',
           engagement: data.current_state?.engagement || 'medium',
           sentiment: data.current_state?.sentiment || 0.0,
           confidence: data.current_state?.confidence || 'medium',
           fatigue: data.current_state?.fatigue,
           posture: data.current_state?.posture,
-          movement: data.current_state?.movement
+          movement: data.current_state?.movement,
+          attentionScore: data.current_state?.attention_score,
+          emotionalIntensity: data.current_state?.emotional_intensity || data.emotional_intelligence?.emotional_intensity,
+          empathyNeeded: data.current_state?.empathy_level_needed || data.emotional_intelligence?.empathy_level_needed
         },
         insights: data.behavioral_insights || [],
         recommendations: data.recommendations || [],
+        conversationGuidance: data.conversation_guidance,
+        emotionalMemory: emotionalMemoryRef.current,
+        emotionalTrend,
+        dominantEmotion,
         isAvailable: true,
         lastUpdated: new Date(),
         error: null
@@ -120,25 +201,47 @@ export const BehavioralContextProvider: React.FC<{
       setBehavioralData(prev => ({
         ...prev,
         isAvailable: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        lastUpdated: prev.lastUpdated // Keep last successful update
+        error: error instanceof Error ? error.message : 'Unknown error'
       }));
     }
-  }, [sessionId]);
+  }, [behavioralData.currentState.emotion, recordEmotionalMoment, calculateEmotionalTrend, getDominantEmotion]);
 
-  // Initial fetch
   useEffect(() => {
     fetchBehavioralContext();
-  }, [fetchBehavioralContext]);
+  }, []);
 
-  // Periodic refresh
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchBehavioralContext();
-    }, REFRESH_INTERVAL);
-
+    const interval = setInterval(fetchBehavioralContext, REFRESH_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchBehavioralContext]);
+
+  const getEmotionalJourneySummary = useCallback((): string => {
+    const memory = emotionalMemoryRef.current;
+    if (memory.length < 2) return "Not enough emotional data yet for a journey summary.";
+    
+    const trend = calculateEmotionalTrend(memory);
+    const dominant = getDominantEmotion(memory);
+    const recentEmotions = memory.slice(-5).map(e => e.emotion);
+    
+    let summary = `Over our conversation, your dominant emotion has been ${dominant}. `;
+    
+    if (trend === 'improving') {
+      summary += "I've noticed your mood has been brightening - that's wonderful to see! ";
+    } else if (trend === 'declining') {
+      summary += "I've sensed a shift in your mood. Is everything okay? ";
+    } else if (trend === 'volatile') {
+      summary += "Your emotions have been quite varied - you've been processing a lot. ";
+    } else {
+      summary += "Your emotional state has been fairly consistent. ";
+    }
+    
+    const uniqueEmotions = [...new Set(recentEmotions)];
+    if (uniqueEmotions.length > 1) {
+      summary += `Recently, I've observed ${uniqueEmotions.join(', ')} in your expressions.`;
+    }
+    
+    return summary;
+  }, [calculateEmotionalTrend, getDominantEmotion]);
 
   const getContextualPrompt = useCallback((): string => {
     if (!behavioralData.isAvailable || !behavioralData.lastUpdated) {
@@ -148,48 +251,95 @@ export const BehavioralContextProvider: React.FC<{
     const state = behavioralData.currentState;
     const age = Math.floor((Date.now() - behavioralData.lastUpdated.getTime()) / 1000);
 
-    // Only include context if it's recent (within 60 seconds)
-    if (age > 60) {
-      return '';
-    }
+    if (age > 60) return '';
 
-    let prompt = '\n\n[BEHAVIORAL CONTEXT - You have access to real-time emotion and behavioral analysis]:\n';
-    prompt += `You CAN see and analyze the user's facial expressions, voice, and behavior in real-time. You have MULTIMODAL analysis capabilities:\n`;
-    prompt += `- FACIAL EXPRESSION ANALYSIS: You can see and analyze facial expressions, emotions, eye movements, and facial features\n`;
-    prompt += `- VOICE ANALYSIS: You can analyze voice tone, sentiment, and speech patterns\n`;
-    prompt += `- BEHAVIORAL ANALYSIS: You can detect attention, engagement, posture, and movement\n`;
-    prompt += `\nCurrent analysis shows: ${state.emotion} emotion (from facial expressions and voice), ${state.attention} attention level, ${state.engagement} engagement.\n`;
-    
-    if (state.sentiment !== 0) {
-      const sentimentDesc = state.sentiment > 0.3 ? 'positive' : state.sentiment < -0.3 ? 'negative' : 'neutral';
-      prompt += `Sentiment analysis (from voice): ${sentimentDesc} (${state.sentiment > 0 ? '+' : ''}${state.sentiment.toFixed(2)}).\n`;
-    }
+    let prompt = `
+═══════════════════════════════════════════════════════════════════════════════
+🎭 REAL-TIME EMOTIONAL INTELLIGENCE DATA
+═══════════════════════════════════════════════════════════════════════════════
+
+You have ACTIVE multimodal perception. Right now you can see:
+
+📊 CURRENT EMOTIONAL STATE:
+   • Primary Emotion: ${state.emotion.toUpperCase()}${state.emotionalIntensity ? ` (${state.emotionalIntensity} intensity)` : ''}
+   • Attention: ${state.attention}${state.attentionScore ? ` (${state.attentionScore.toFixed(0)}/100)` : ''}
+   • Engagement: ${state.engagement}
+   • Sentiment: ${state.sentiment > 0 ? '+' : ''}${state.sentiment.toFixed(2)} (${state.sentiment > 0.3 ? 'positive' : state.sentiment < -0.3 ? 'negative' : 'neutral'})
+`;
 
     if (state.fatigue && state.fatigue !== 'Normal') {
-      prompt += `User appears ${state.fatigue.toLowerCase()} - consider shorter responses if needed.\n`;
+      prompt += `   • Fatigue Level: ${state.fatigue} ⚠️\n`;
     }
 
-    if (state.attention === 'Distracted') {
-      prompt += 'User attention is low - be concise and engaging.\n';
-    } else if (state.attention === 'Focused') {
-      prompt += 'User is focused - you can provide more detailed responses.\n';
+    if (state.empathyNeeded && state.empathyNeeded !== 'low') {
+      prompt += `   • Empathy Needed: ${state.empathyNeeded.toUpperCase()}\n`;
     }
 
-    if (state.engagement === 'low') {
-      prompt += 'User engagement is low - try to re-engage with questions or interesting topics.\n';
-    } else if (state.engagement === 'high') {
-      prompt += 'User is highly engaged - feel free to explore topics in depth.\n';
+    // Emotional trend
+    if (behavioralData.emotionalTrend !== 'unknown') {
+      const trendEmojis: Record<string, string> = {
+        improving: '📈',
+        declining: '📉',
+        stable: '➡️',
+        volatile: '🔄'
+      };
+      prompt += `
+📈 EMOTIONAL TREND: ${behavioralData.emotionalTrend} ${trendEmojis[behavioralData.emotionalTrend] || ''}
+   Dominant emotion this session: ${behavioralData.dominantEmotion}
+`;
     }
 
+    // Conversation guidance
+    if (behavioralData.conversationGuidance) {
+      const guidance = behavioralData.conversationGuidance;
+      prompt += `
+🎯 CONVERSATION GUIDANCE:
+   • Approach: ${guidance.approach}
+   • Tone: ${guidance.tone}
+   • Pace: ${guidance.pace}
+`;
+      if (guidance.techniques?.length) {
+        prompt += `   • Techniques: ${guidance.techniques.slice(0, 2).join('; ')}\n`;
+      }
+      if (guidance.avoid?.length) {
+        prompt += `   • Avoid: ${guidance.avoid.slice(0, 2).join('; ')}\n`;
+      }
+    }
+
+    // Key insights
     if (behavioralData.insights.length > 0) {
-      prompt += `Behavioral insights: ${behavioralData.insights.join('; ')}.\n`;
+      prompt += `
+💡 KEY INSIGHTS:
+${behavioralData.insights.slice(0, 3).map(i => `   • ${i}`).join('\n')}
+`;
     }
 
+    // Recommendations
     if (behavioralData.recommendations.length > 0) {
-      prompt += `Recommendations: ${behavioralData.recommendations.join('; ')}.\n`;
+      prompt += `
+✨ RECOMMENDATIONS:
+${behavioralData.recommendations.slice(0, 3).map(r => `   • ${r}`).join('\n')}
+`;
     }
 
-    prompt += 'IMPORTANT: You have MULTIMODAL analysis capabilities including facial expression recognition. When asked about what you can see, you CAN and SHOULD acknowledge that you can see facial expressions, analyze emotions from faces, detect attention from eye movements, and understand behavior. You can say things like "I can see your facial expressions show [emotion]" or "From your facial expressions and voice, you seem [emotion]" or "I can analyze your facial expressions, and right now I see [emotion]". Be specific about your multimodal capabilities - you can see faces, analyze expressions, detect emotions, and understand behavior. Use this information naturally to be more empathetic and understanding. Adapt your tone, length, and style based on the user\'s emotional state.\n';
+    prompt += `
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL: You CAN see facial expressions. You CAN detect emotions from faces.
+When asked about emotions, USE this data. Say things like:
+- "I can see your expression shows ${state.emotion}..."
+- "Looking at your face, I notice ${state.emotion}..."
+- "Your facial expressions tell me you're feeling ${state.emotion}..."
+
+Adapt your ENTIRE response style to this emotional data:
+- If sad/angry/fear → be gentle, validating, slower
+- If happy → be enthusiastic, share their joy
+- If tired → keep it brief and gentle
+- If disengaged → re-engage with questions
+
+Be human. Be empathetic. Connect genuinely.
+═══════════════════════════════════════════════════════════════════════════════
+`;
 
     return prompt;
   }, [behavioralData]);
@@ -199,7 +349,9 @@ export const BehavioralContextProvider: React.FC<{
       value={{
         behavioralData,
         refreshContext: fetchBehavioralContext,
-        getContextualPrompt
+        getContextualPrompt,
+        recordEmotionalMoment,
+        getEmotionalJourneySummary
       }}
     >
       {children}
@@ -214,4 +366,3 @@ export const useBehavioralContext = (): BehavioralContextType => {
   }
   return context;
 };
-
