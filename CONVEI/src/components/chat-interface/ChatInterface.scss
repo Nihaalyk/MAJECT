@@ -268,6 +268,24 @@
             align-self: flex-start;
             align-items: flex-start;
 
+            .message-wrapper {
+              display: flex;
+              align-items: flex-start;
+              gap: var(--space-3);
+              width: 100%;
+            }
+
+            .avatar-container {
+              flex-shrink: 0;
+              margin-top: var(--space-1);
+            }
+
+            .message-content-wrapper {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+            }
+
             .message-content {
               background: var(--bg-tertiary);
               color: var(--text-primary);
@@ -682,6 +700,22 @@
           &.processing-message {
             align-self: flex-start;
             align-items: flex-start;
+
+            .message-wrapper {
+              display: flex;
+              align-items: flex-start;
+              gap: var(--space-3);
+              width: 100%;
+            }
+
+            .avatar-container {
+              flex-shrink: 0;
+              margin-top: var(--space-1);
+            }
+
+            .message-content-wrapper {
+              flex: 1;
+            }
 
             .message-content {
               background: var(--bg-tertiary);

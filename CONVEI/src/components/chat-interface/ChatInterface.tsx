@@ -15,6 +15,7 @@ import { Modality } from "@google/genai";
 import { formatMessageTime, generateMessageId } from "../../lib/utils";
 import { ThemeToggle } from "../theme-toggle/ThemeToggle";
 import { ToolIcon, ResponseIcon, MicrophoneIcon, SpeakerIcon } from "../icons/SvgIcons";
+import { PulsatingAvatar } from "../ai-avatar/PulsatingAvatar";
 import { ChatMessage, ToolCallData, ToolResponseData } from "../../types/chat";
 import { TOOL_RESPONSE_DELAY, ERROR_MESSAGES, AGENT_NAMES, TOOL_NAMES, SCROLL_BEHAVIOR, DEFAULT_MODEL, DEFAULT_VOICE } from "../../constants";
 import "./ChatInterface.scss";
@@ -25,7 +26,7 @@ function ChatInterfaceComponent() {
   const { memory, addConversationEntry, getContextualInfo, clearMemory } = useConversationMemory();
   const { messages: contextMessages, addMessage, clearMessages } = useMessageContext();
   const { logout } = useAuth();
-  const { getContextualPrompt } = useBehavioralContext();
+  const { getContextualPrompt, behavioralData } = useBehavioralContext();
   // const { logs } = useLoggerStore(); // Unused for now
   const [currentAgent, setCurrentAgent] = useState<string>(t(AGENT_NAMES.MAIN));
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -640,16 +641,27 @@ function ChatInterfaceComponent() {
       case 'assistant':
         return (
           <div key={message.id} className={`message assistant-message ${message.isTranscription ? 'output-transcription-message' : ''}`}>
-            {message.isTranscription && (
-              <div className="message-header">
-                <SpeakerIcon size={14} className="transcription-icon" />
-                <span className="transcription-badge">Assistant</span>
+            <div className="message-wrapper">
+              <div className="avatar-container">
+                <PulsatingAvatar 
+                  size={40} 
+                  isActive={isProcessing || behavioralData.isAvailable}
+                  emotion={behavioralData.currentState?.emotion || 'neutral'}
+                />
               </div>
-            )}
-            <div className="message-content">
-              {renderMarkdown(message.content)}
+              <div className="message-content-wrapper">
+                {message.isTranscription && (
+                  <div className="message-header">
+                    <SpeakerIcon size={14} className="transcription-icon" />
+                    <span className="transcription-badge">Assistant</span>
+                  </div>
+                )}
+                <div className="message-content">
+                  {renderMarkdown(message.content)}
+                </div>
+                <div className="message-time">{timeStr}</div>
+              </div>
             </div>
-            <div className="message-time">{timeStr}</div>
           </div>
         );
 
