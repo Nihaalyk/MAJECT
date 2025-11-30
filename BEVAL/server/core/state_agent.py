@@ -68,8 +68,8 @@ class StateAgent:
         data = signal.get("data", {})
         timestamp = signal.get("timestamp", time.time())
         
-        logger.info(f"🎯 State agent received signal: {signal_type}")
-        logger.info(f"📊 Signal data: {data}")
+        logger.info(f"State agent received signal: {signal_type}")
+        logger.info(f"Signal data: {data}")
         
         if signal_type == "question_timestamped":
             await self._process_question_timestamp(data, timestamp)
@@ -78,7 +78,7 @@ class StateAgent:
         elif signal_type == "qa_pair_timestamped":
             await self._process_qa_pair_timestamp(data, timestamp)
         else:
-            logger.warning(f"⚠️ Unknown signal type: {signal_type}")
+            logger.warning(f"Unknown signal type: {signal_type}")
     
     async def _process_question_timestamp(self, data: Dict[str, Any], signal_timestamp: float):
         """Process a question timestamp and correlate with behavioral features"""
@@ -154,7 +154,7 @@ class StateAgent:
         answer = data.get("answer", "")
         qa_timestamp = data.get("timestamp", signal_timestamp)
         
-        logger.info(f"🔄 Processing Q&A pair: {question[:50]}...")
+        logger.info(f"Processing Q&A pair: {question[:50]}...")
         
         # Create initial enriched Q&A pair (without behavioral insights yet)
         enriched_qa = EnrichedQAPair(
@@ -172,7 +172,7 @@ class StateAgent:
         self.shared_state["last_qa_pair"] = enriched_qa
         self.shared_state["last_update"] = time.time()
         
-        logger.info(f"✅ Created initial Q&A pair (will be enriched asynchronously)")
+            logger.info(f"Created initial Q&A pair (will be enriched asynchronously)")
         
         # Send initial update to client
         await self._send_update_to_client("qa_pair_created", {
@@ -191,7 +191,7 @@ class StateAgent:
         try:
             # Simulate latency (5-10 seconds as mentioned)
             latency = 3.0 + (qa_timestamp % 5.0)  # 3-8 seconds latency
-            logger.info(f"⏳ Simulating {latency:.1f}s latency for behavioral analysis...")
+            logger.info(f"Simulating {latency:.1f}s latency for behavioral analysis...")
             await asyncio.sleep(latency)
             
             # Fetch behavioral features using the configured extractor
@@ -220,7 +220,7 @@ class StateAgent:
             self.shared_state["last_qa_pair"] = enriched_qa
             self.shared_state["last_update"] = time.time()
             
-            logger.info(f"🎯 Q&A pair enriched with behavioral insights: {behavioral_insights[:100]}...")
+            logger.info(f"Q&A pair enriched with behavioral insights: {behavioral_insights[:100]}...")
             
             # Send enrichment update to client
             await self._send_update_to_client("qa_pair_enriched", {
@@ -235,7 +235,7 @@ class StateAgent:
             })
             
         except Exception as e:
-            logger.error(f"❌ Error enriching Q&A pair: {e}")
+            logger.error(f"Error enriching Q&A pair: {e}")
     
     async def _send_update_to_client(self, update_type: str, data: Dict[str, Any]):
         """Send StateAgent updates to the client via WebSocket"""
@@ -249,12 +249,12 @@ class StateAgent:
                     "timestamp": time.time()
                 }
                 await self.websocket.send(json.dumps(message))
-                logger.info(f"✅ Sent StateAgent update to client: {update_type}")
-                logger.info(f"📤 Message: {json.dumps(message, indent=2)}")
+                logger.info(f"Sent StateAgent update to client: {update_type}")
+                logger.info(f"Message: {json.dumps(message, indent=2)}")
             except Exception as e:
-                logger.error(f"❌ Failed to send StateAgent update to client: {e}")
+                logger.error(f"Failed to send StateAgent update to client: {e}")
         else:
-            logger.warning("⚠️ No websocket connection available for StateAgent updates")
+            logger.warning("No websocket connection available for StateAgent updates")
     
     
     def _generate_qa_pair_description(self, question: str, answer: str, features: List[BehavioralFeature]) -> str:

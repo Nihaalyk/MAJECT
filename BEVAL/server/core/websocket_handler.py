@@ -56,10 +56,10 @@ async def get_conversation_context_for_ai(session: SessionState) -> str:
                         context_parts.append(f"  * Q: {pair['question']}")
                         context_parts.append(f"    A: {pair['answer']}")
                         if pair['is_enriched']:
-                            context_parts.append(f"    🧠 Behavioral Insights: {pair['behavioral_insights']}")
-                            context_parts.append(f"    📊 Confidence: {pair['confidence']:.2f}")
+                            context_parts.append(f"    Behavioral Insights: {pair['behavioral_insights']}")
+                            context_parts.append(f"    Confidence: {pair['confidence']:.2f}")
                         else:
-                            context_parts.append(f"    ⏳ Behavioral analysis in progress...")
+                            context_parts.append(f"    Behavioral analysis in progress...")
                         context_parts.append("")
                 
                 # Add latest enriched Q&A pair if available
@@ -69,7 +69,7 @@ async def get_conversation_context_for_ai(session: SessionState) -> str:
                     context_parts.append(f"  Q: {last_pair.question}")
                     context_parts.append(f"  A: {last_pair.answer}")
                     if last_pair.is_enriched:
-                        context_parts.append(f"  🧠 Behavioral Insights: {last_pair.behavioral_insights}")
+                        context_parts.append(f"  Behavioral Insights: {last_pair.behavioral_insights}")
                     else:
                         context_parts.append(f"  ⏳ Behavioral analysis in progress...")
         
@@ -147,7 +147,7 @@ async def handle_messages(websocket: Any, session: SessionState) -> None:
                     # Send text message to show in chat
                     await websocket.send(json.dumps({
                         "type": "text",
-                        "data": "⚠️ Quota exceeded. Please wait a moment and try again in a few minutes."
+                        "data": "Quota exceeded. Please wait a moment and try again in a few minutes."
                     }))
                     handled = True
                     break

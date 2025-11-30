@@ -217,7 +217,7 @@ export const BehavioralContextProvider: React.FC<{
       
       // Debug logging
       if (audioEnergy > 0 || audioPitch > 0 || speechRate > 0) {
-        console.log('📊 Audio data extracted:', { audioEnergy, audioPitch, speechRate });
+        console.log('Audio data extracted:', { audioEnergy, audioPitch, speechRate });
       }
 
       setBehavioralData({
@@ -316,12 +316,12 @@ export const BehavioralContextProvider: React.FC<{
 
     let prompt = `
 ═══════════════════════════════════════════════════════════════════════════════
-🎭 REAL-TIME EMOTIONAL INTELLIGENCE DATA
+REAL-TIME EMOTIONAL INTELLIGENCE DATA
 ═══════════════════════════════════════════════════════════════════════════════
 
 You have ACTIVE multimodal perception. Right now you can see:
 
-📊 CURRENT EMOTIONAL STATE:
+CURRENT EMOTIONAL STATE:
    • Primary Emotion: ${state.emotion.toUpperCase()}${state.emotionalIntensity ? ` (${state.emotionalIntensity} intensity)` : ''}
    • Attention: ${state.attention}${state.attentionScore ? ` (${state.attentionScore.toFixed(0)}/100)` : ''}
    • Engagement: ${state.engagement}
@@ -329,7 +329,7 @@ You have ACTIVE multimodal perception. Right now you can see:
 `;
 
     if (state.fatigue && state.fatigue !== 'Normal') {
-      prompt += `   • Fatigue Level: ${state.fatigue} ⚠️\n`;
+      prompt += `   • Fatigue Level: ${state.fatigue}\n`;
     }
 
     if (state.empathyNeeded && state.empathyNeeded !== 'low') {
@@ -338,14 +338,8 @@ You have ACTIVE multimodal perception. Right now you can see:
 
     // Emotional trend
     if (behavioralData.emotionalTrend !== 'unknown') {
-      const trendEmojis: Record<string, string> = {
-        improving: '📈',
-        declining: '📉',
-        stable: '➡️',
-        volatile: '🔄'
-      };
       prompt += `
-📈 EMOTIONAL TREND: ${behavioralData.emotionalTrend} ${trendEmojis[behavioralData.emotionalTrend] || ''}
+EMOTIONAL TREND: ${behavioralData.emotionalTrend}
    Dominant emotion this session: ${behavioralData.dominantEmotion}
 `;
     }
@@ -354,7 +348,7 @@ You have ACTIVE multimodal perception. Right now you can see:
     if (behavioralData.conversationGuidance) {
       const guidance = behavioralData.conversationGuidance;
       prompt += `
-🎯 CONVERSATION GUIDANCE:
+CONVERSATION GUIDANCE:
    • Approach: ${guidance.approach}
    • Tone: ${guidance.tone}
    • Pace: ${guidance.pace}
@@ -370,7 +364,7 @@ You have ACTIVE multimodal perception. Right now you can see:
     // Key insights
     if (behavioralData.insights.length > 0) {
       prompt += `
-💡 KEY INSIGHTS:
+KEY INSIGHTS:
 ${behavioralData.insights.slice(0, 3).map(i => `   • ${i}`).join('\n')}
 `;
     }
@@ -378,7 +372,7 @@ ${behavioralData.insights.slice(0, 3).map(i => `   • ${i}`).join('\n')}
     // Recommendations
     if (behavioralData.recommendations.length > 0) {
       prompt += `
-✨ RECOMMENDATIONS:
+RECOMMENDATIONS:
 ${behavioralData.recommendations.slice(0, 3).map(r => `   • ${r}`).join('\n')}
 `;
     }

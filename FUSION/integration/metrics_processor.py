@@ -623,18 +623,18 @@ class MetricsProcessor:
             if last_input:
                 # Check if conversation topic aligns with emotion
                 if emotion == 'sad' and any(word in last_input.lower() for word in ['problem', 'issue', 'difficult', 'worried', 'sad', 'disappointed']):
-                    insights.append("💬 The conversation topic about challenges aligns with the sad emotion - user may be sharing concerns")
+                    insights.append("The conversation topic about challenges aligns with the sad emotion - user may be sharing concerns")
                 elif emotion == 'happy' and any(word in last_input.lower() for word in ['happy', 'excited', 'great', 'good', 'wonderful', 'amazing']):
-                    insights.append("✨ Positive conversation topic matches the happy emotion - user is engaged positively")
+                    insights.append("Positive conversation topic matches the happy emotion - user is engaged positively")
                 elif emotion == 'angry' and any(word in last_input.lower() for word in ['angry', 'frustrated', 'annoyed', 'upset']):
-                    insights.append("⚠️ Conversation about frustration aligns with angry emotion - user needs validation")
+                    insights.append("Conversation about frustration aligns with angry emotion - user needs validation")
             
             # Long conversation insights
             if len(conversation_history) > 15:
                 if engagement == 'high':
-                    insights.append("📚 Extended conversation with high engagement - user is deeply invested in this topic")
+                    insights.append("Extended conversation with high engagement - user is deeply invested in this topic")
                 elif engagement == 'low':
-                    insights.append("⏱️ Long conversation with declining engagement - consider summarizing or offering a break")
+                    insights.append("Long conversation with declining engagement - consider summarizing or offering a break")
         
         return insights if insights else ["User appears stable - continue with natural conversation flow"]
     
@@ -649,38 +649,38 @@ class MetricsProcessor:
         
         # Core emotional recommendations
         if emotion == 'sad' and empathy_needed in ['high', 'very_high']:
-            recommendations.append("🫂 Lead with empathy - acknowledge their feelings before anything else")
-            recommendations.append("🗣️ Use validating phrases: 'I can see you're going through something...'")
+            recommendations.append("Lead with empathy - acknowledge their feelings before anything else")
+            recommendations.append("Use validating phrases: 'I can see you're going through something...'")
         elif emotion == 'angry':
-            recommendations.append("😌 Stay calm and don't match their frustration")
-            recommendations.append("👂 Let them express fully before responding")
+            recommendations.append("Stay calm and don't match their frustration")
+            recommendations.append("Let them express fully before responding")
         elif emotion == 'fear':
-            recommendations.append("🤝 Be a steady, reassuring presence")
+            recommendations.append("Be a steady, reassuring presence")
             recommendations.append("📋 Break complex things into simple steps")
         elif emotion == 'happy':
-            recommendations.append("🎉 Match their positive energy!")
-            recommendations.append("❓ Ask about what's making them happy")
+            recommendations.append("Match their positive energy!")
+            recommendations.append("Ask about what's making them happy")
         
         # Intensity-based recommendations
         if intensity == 'strong':
-            recommendations.append("💡 Give extra space for emotional expression")
+            recommendations.append("Give extra space for emotional expression")
         
         # Trend-based recommendations
         if arc == 'darkening':
-            recommendations.append("🔍 Check in: 'How are you feeling about all this?'")
+            recommendations.append("Check in: 'How are you feeling about all this?'")
         elif arc == 'brightening':
-            recommendations.append("✨ Acknowledge the positive shift you're seeing")
+            recommendations.append("Acknowledge the positive shift you're seeing")
         
         # Pattern-based recommendations
         if patterns.get('patterns_detected'):
             summary = patterns.get('summary', {})
             if summary.get('stress_count', 0) > 2:
-                recommendations.append("⚠️ Multiple stress indicators detected - consider offering a break")
+                recommendations.append("Multiple stress indicators detected - consider offering a break")
             if summary.get('engagement_drops_count', 0) > 2:
-                recommendations.append("📉 Engagement dropping - try a more engaging approach")
+                recommendations.append("Engagement dropping - try a more engaging approach")
         
         # Fatigue-based recommendations
         if emotional_state.get('fatigue_factor'):
-            recommendations.append("😴 User seems tired - keep responses concise and gentle")
+            recommendations.append("User seems tired - keep responses concise and gentle")
         
-        return recommendations if recommendations else ["👍 Continue with your natural, empathetic approach"]
+        return recommendations if recommendations else ["Continue with your natural, empathetic approach"]

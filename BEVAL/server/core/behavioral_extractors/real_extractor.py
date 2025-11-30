@@ -32,7 +32,7 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
     
     async def initialize(self) -> bool:
         """Initialize connection to your external behavioral analysis system"""
-        logger.info("🔧 Initializing real behavioral extractor...")
+        logger.info("Initializing real behavioral extractor...")
         
         try:
             # TODO: Add your initialization code here
@@ -49,11 +49,11 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
             #     await self._load_local_models()
             
             self.is_initialized = True
-            logger.info("✅ Real behavioral extractor initialized")
+            logger.info("Real behavioral extractor initialized")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize real behavioral extractor: {e}")
+            logger.error(f"Failed to initialize real behavioral extractor: {e}")
             return False
     
     async def extract_features_for_timestamp(self, timestamp: float, context: Dict[str, Any] = None) -> List[BehavioralFeature]:
@@ -64,7 +64,7 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
         if not self.is_initialized:
             await self.initialize()
         
-        logger.info(f"🔍 REAL: Extracting behavioral features for timestamp {timestamp}")
+        logger.info(f"REAL: Extracting behavioral features for timestamp {timestamp}")
         
         try:
             # TODO: Replace this with your actual feature extraction logic
@@ -82,11 +82,11 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
             # For now, return empty list (you'll implement this)
             features = []
             
-            logger.info(f"🔍 REAL: Extracted {len(features)} behavioral features for timestamp {timestamp}")
+            logger.info(f"REAL: Extracted {len(features)} behavioral features for timestamp {timestamp}")
             return features
             
         except Exception as e:
-            logger.error(f"❌ Error extracting features for timestamp {timestamp}: {e}")
+            logger.error(f"Error extracting features for timestamp {timestamp}: {e}")
             return []
     
     async def extract_features_for_time_range(self, start_timestamp: float, end_timestamp: float, context: Dict[str, Any] = None) -> List[BehavioralFeature]:
@@ -94,7 +94,7 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
         if not self.is_initialized:
             await self.initialize()
         
-        logger.info(f"🔍 REAL: Extracting features for time range {start_timestamp} to {end_timestamp}")
+        logger.info(f"REAL: Extracting features for time range {start_timestamp} to {end_timestamp}")
         
         try:
             # TODO: Implement your time range extraction logic
@@ -102,11 +102,11 @@ class RealBehavioralExtractor(BaseBehavioralExtractor):
             
             features = []
             
-            logger.info(f"🔍 REAL: Extracted {len(features)} features for time range")
+            logger.info(f"REAL: Extracted {len(features)} features for time range")
             return features
             
         except Exception as e:
-            logger.error(f"❌ Error extracting features for time range: {e}")
+            logger.error(f"Error extracting features for time range: {e}")
             return []
     
     def get_supported_feature_types(self) -> List[str]:

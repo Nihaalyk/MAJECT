@@ -15,44 +15,44 @@
 
 ---
 
-## 🌟 Overview
+## Overview
 
 **MAJECT** is a cutting-edge AI conversational platform that combines real-time behavioral analysis with emotionally intelligent AI interactions. The system analyzes facial expressions, voice patterns, and body language to provide context-aware, empathetic responses through **ARIA** (Advanced Relational Intelligence Assistant).
 
 ### What Makes MAJECT Special?
 
-- 🎭 **Real-Time Behavioral Analysis**: Analyzes facial expressions, voice, posture, and movement in real-time
-- 💬 **Emotionally Intelligent AI**: ARIA understands and responds to emotions with genuine empathy
-- 🎙️ **Natural Voice Interaction**: Seamless voice conversations with live transcription
-- 📊 **Comprehensive Insights**: Detailed behavioral reports and emotional journey tracking
-- 🔄 **Multi-Modal Integration**: Combines video, audio, and conversational context
+- **Real-Time Behavioral Analysis**: Analyzes facial expressions, voice, posture, and movement in real-time
+- **Emotionally Intelligent AI**: ARIA understands and responds to emotions with genuine empathy
+- **Natural Voice Interaction**: Seamless voice conversations with live transcription
+- **Comprehensive Insights**: Detailed behavioral reports and emotional journey tracking
+- **Multi-Modal Integration**: Combines video, audio, and conversational context
 
 ---
 
-## ✨ Features
+## Features
 
-### 🧠 Behavioral Analysis (BEVAL)
+### Behavioral Analysis (BEVAL)
 - **Facial Expression Detection**: 7 core emotions (happy, sad, angry, fear, surprise, disgust, neutral)
 - **Eye Tracking**: Blink rate, gaze direction, attention level
 - **Voice Analysis**: Sentiment, prosody, speech rate, emotion from voice
 - **Posture & Movement**: Body language analysis and fatigue detection
 - **Real-Time Processing**: Sub-second latency for live analysis
 
-### 🤖 Emotionally Intelligent AI (ARIA)
+### Emotionally Intelligent AI (ARIA)
 - **Multimodal Perception**: Sees facial expressions, hears voice tone, understands behavior
 - **Emotional Response Protocols**: Tailored responses based on detected emotions
 - **Context-Aware Conversations**: Adapts communication style to user's emotional state
 - **Empathy Engine**: Generates empathetic responses with appropriate emotional intelligence
 - **Behavioral Reports**: Comprehensive end-of-conversation analysis
 
-### 💻 Modern User Interface
+### Modern User Interface
 - **Monochrome Design**: Sleek black and white aesthetic
 - **Pulsating Avatar**: Audio-reactive neural network visualization
 - **Real-Time Updates**: Live behavioral metrics and status indicators
 - **Responsive Design**: Works seamlessly on all devices
 - **Dark Theme**: Optimized for extended use
 
-### 🔧 Technical Features
+### Technical Features
 - **Multi-Agent Architecture**: Modular, extensible agent system
 - **Session Management**: Persistent conversations with resumption
 - **Bilingual Support**: English and Kannada language support
@@ -61,7 +61,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -117,7 +117,7 @@ CONVEI will start on `http://localhost:3001`
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 MAJECT consists of three main components:
 
@@ -142,19 +142,19 @@ MAJECT consists of three main components:
 
 ### Component Details
 
-#### 🎥 BEVAL (Behavioral Analyzer)
+#### BEVAL (Behavioral Analyzer)
 - Analyzes video streams for facial expressions, eye tracking, posture
 - Processes audio for sentiment, emotion, prosody
 - Emits real-time metrics via SocketIO
 - Web UI dashboard for visualization
 
-#### 🔗 FUSION (Integration Layer)
+#### FUSION (Integration Layer)
 - Collects metrics from BEVAL via SocketIO
 - Stores data in SQLite database
 - Provides REST API for CONVEI
 - Processes metrics for AI context generation
 
-#### 💬 CONVEI (Conversational Interface)
+#### CONVEI (Conversational Interface)
 - React-based frontend application
 - Integrates with Google Gemini 2.5 Live API
 - ARIA: Emotionally intelligent AI assistant
@@ -162,7 +162,7 @@ MAJECT consists of three main components:
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 ### Comprehensive Guides
 
@@ -196,7 +196,7 @@ MAJECT consists of three main components:
 
 ---
 
-## 🎯 Use Cases
+## Use Cases
 
 ### 1. Emotional Support Conversations
 ARIA can detect when users are sad, anxious, or stressed and provide empathetic support.
@@ -215,7 +215,7 @@ Voice-first interface with emotional understanding for inclusive interactions.
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -242,7 +242,7 @@ export FUSION_API_PORT=8083
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Run Tests
 
@@ -270,7 +270,7 @@ npm test
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -297,7 +297,7 @@ For more troubleshooting, see [Technical Documentation](./TECHNICAL_DOCUMENTATIO
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
 ### Production Build
 
@@ -329,7 +329,7 @@ uv run python run_web_ui.py
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow these steps:
 
@@ -350,7 +350,7 @@ We welcome contributions! Please follow these steps:
 
 ---
 
-## 📊 Project Structure
+## Project Structure
 
 ```
 MAJECT/
@@ -376,13 +376,13 @@ MAJECT/
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Google Gemini API** for powerful AI capabilities
 - **DeepFace** for facial expression analysis
@@ -392,7 +392,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ---
 
-## 📧 Support
+## Support
 
 - **Documentation**: See [Technical Documentation](./TECHNICAL_DOCUMENTATION.md)
 - **Issues**: Open an issue on GitHub
@@ -400,7 +400,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### Upcoming Features
 - [ ] Additional language support
@@ -420,9 +420,11 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 <div align="center">
 
-**Made with ❤️ by the MAJECT Team**
+**Made with love by the MAJECT Team**
 
-[⭐ Star us on GitHub](https://github.com/your-repo) • [📖 Read the Docs](./TECHNICAL_DOCUMENTATION.md) • [🐛 Report Issues](https://github.com/your-repo/issues)
+[Star us on GitHub](https://github.com/your-repo) • [Read the Docs](./TECHNICAL_DOCUMENTATION.md) • [Report Issues](https://github.com/your-repo/issues)
 
 </div>
+
+
 

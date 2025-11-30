@@ -115,7 +115,7 @@ function ChatInterfaceComponent() {
         
         // Debug logging for tool calls
         if (process.env.NODE_ENV === 'development') {
-          console.log("🔧 Tool call received:", { name, args, fullToolCall: toolCall });
+          console.log("Tool call received:", { name, args, fullToolCall: toolCall });
         }
 
 

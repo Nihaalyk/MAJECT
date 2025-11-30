@@ -85,16 +85,16 @@ export class AgentRegistry {
 
         case "set_user_name":
           const userName = args.name;
-          console.log("👤 set_user_name tool called:", { name: userName });
+          console.log("set_user_name tool called:", { name: userName });
           result = this.setUserName(userName);
           break;
 
         case "get_behavioral_context":
           const sessionId = "current";
           const windowSeconds = args.window || 5;
-          console.log("📊 get_behavioral_context tool called:", { sessionId, window: windowSeconds });
+          console.log("get_behavioral_context tool called:", { sessionId, window: windowSeconds });
           result = await this.getBehavioralContext(sessionId, windowSeconds);
-          console.log("📊 get_behavioral_context result:", result);
+          console.log("get_behavioral_context result:", result);
           
           // Track emotion in journey - record every time we get behavioral context
           if (result.data?.emotion) {
@@ -121,24 +121,24 @@ export class AgentRegistry {
           break;
 
         case "generate_behavioral_report":
-          console.log("📋 generate_behavioral_report tool called");
+          console.log("generate_behavioral_report tool called");
           result = await this.generateBehavioralReport(
             args.include_recommendations !== false,
             args.include_timeline !== false
           );
-          console.log("📋 generate_behavioral_report result:", result);
+          console.log("generate_behavioral_report result:", result);
           break;
 
         case "analyze_emotional_journey":
-          console.log("📈 analyze_emotional_journey tool called");
+          console.log("analyze_emotional_journey tool called");
           result = await this.analyzeEmotionalJourney(args.include_timeline, args.include_triggers);
-          console.log("📈 analyze_emotional_journey result:", result);
+          console.log("analyze_emotional_journey result:", result);
           break;
 
         case "get_empathy_response":
-          console.log("🎭 get_empathy_response tool called:", args);
+          console.log("get_empathy_response tool called:", args);
           result = this.getEmpathyResponse(args.detected_emotion, args.context, args.intensity);
-          console.log("🎭 get_empathy_response result:", result);
+          console.log("get_empathy_response result:", result);
           break;
           
         default:
@@ -329,21 +329,21 @@ export class AgentRegistry {
           : `**ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
 
         message += this.currentLanguage === 'en'
-          ? `🎭 **Dominant Emotion**: ${dominantEmotion}\n`
-          : `🎭 **ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
+          ? `**Dominant Emotion**: ${dominantEmotion}\n`
+          : `**ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
 
         message += this.currentLanguage === 'en'
-          ? `📊 **Emotional Stability**: ${emotionalVariability}\n`
-          : `📊 **ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
+          ? `**Emotional Stability**: ${emotionalVariability}\n`
+          : `**ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
 
         message += this.currentLanguage === 'en'
-          ? `📈 **Emotional Arc**: ${emotionalArc}\n`
-          : `📈 **ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
+          ? `**Emotional Arc**: ${emotionalArc}\n`
+          : `**ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
 
         if (trends.sentiment_trend) {
           message += this.currentLanguage === 'en'
-            ? `💭 **Sentiment Trend**: ${trends.sentiment_trend}\n`
-            : `💭 **ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
+            ? `**Sentiment Trend**: ${trends.sentiment_trend}\n`
+            : `**ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
         }
 
         if (journey.length > 0 && includeTimeline) {
@@ -377,8 +377,8 @@ export class AgentRegistry {
 
         if (journey.length < 3) {
           message += this.currentLanguage === 'en'
-            ? `\n💡 **Note**: I'm still learning about your emotional patterns. Keep talking and I'll build a more detailed analysis of your emotional journey!\n`
-            : `\n💡 **ಗಮನಿಸಿ**: ನಾನು ಇನ್ನೂ ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಮಾದರಿಗಳ ಬಗ್ಗೆ ಕಲಿಯುತ್ತಿದ್ದೇನೆ. ಮಾತನಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ ಮತ್ತು ನಾನು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿವರವಾದ ವಿಶ್ಲೇಷಣೆಯನ್ನು ನಿರ್ಮಿಸುತ್ತೇನೆ!\n`;
+            ? `\n**Note**: I'm still learning about your emotional patterns. Keep talking and I'll build a more detailed analysis of your emotional journey!\n`
+            : `\n**ಗಮನಿಸಿ**: ನಾನು ಇನ್ನೂ ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಮಾದರಿಗಳ ಬಗ್ಗೆ ಕಲಿಯುತ್ತಿದ್ದೇನೆ. ಮಾತನಾಡುವುದನ್ನು ಮುಂದುವರಿಸಿ ಮತ್ತು ನಾನು ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿವರವಾದ ವಿಶ್ಲೇಷಣೆಯನ್ನು ನಿರ್ಮಿಸುತ್ತೇನೆ!\n`;
         }
         
         message += this.currentLanguage === 'en'
@@ -409,21 +409,21 @@ export class AgentRegistry {
         : `**ನಿಮ್ಮ ಭಾವನಾತ್ಮಕ ಪ್ರಯಾಣದ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
 
       message += this.currentLanguage === 'en'
-        ? `🎭 **Dominant Emotion**: ${dominantEmotion}\n`
-        : `🎭 **ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
+        ? `**Dominant Emotion**: ${dominantEmotion}\n`
+        : `**ಮುಖ್ಯ ಭಾವನೆ**: ${dominantEmotion}\n`;
 
       message += this.currentLanguage === 'en'
-        ? `📊 **Emotional Stability**: ${emotionalVariability}\n`
-        : `📊 **ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
+        ? `**Emotional Stability**: ${emotionalVariability}\n`
+        : `**ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ**: ${emotionalVariability}\n`;
 
       message += this.currentLanguage === 'en'
-        ? `📈 **Emotional Arc**: ${emotionalArc}\n`
-        : `📈 **ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
+        ? `**Emotional Arc**: ${emotionalArc}\n`
+        : `**ಭಾವನಾತ್ಮಕ ಆರ್ಕ್**: ${emotionalArc}\n`;
 
       if (trends.sentiment_trend) {
         message += this.currentLanguage === 'en'
-          ? `💭 **Sentiment Trend**: ${trends.sentiment_trend}\n`
-          : `💭 **ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
+          ? `**Sentiment Trend**: ${trends.sentiment_trend}\n`
+          : `**ಭಾವನೆಯ ಪ್ರವೃತ್ತಿ**: ${trends.sentiment_trend}\n`;
       }
 
       if (includeTimeline && journey.length > 0) {
@@ -607,15 +607,15 @@ export class AgentRegistry {
 
     const message = this.currentLanguage === 'en'
       ? `**Empathy Response Guide for ${detectedEmotion.toUpperCase()}:**\n\n` +
-        `🎭 **Validation phrases:**\n${responseData.validation.map((v: string) => `  • "${v}"`).join('\n')}\n\n` +
-        `❓ **Follow-up questions:**\n${responseData.followUp.map((f: string) => `  • "${f}"`).join('\n')}\n\n` +
-        `🎨 **Recommended tone:** ${responseData.tone}\n\n` +
-        `📊 **Intensity adjustment:** ${responseIntensity}` +
-        (context ? `\n\n📝 **Context:** "${context}"` : '')
+        `**Validation phrases:**\n${responseData.validation.map((v: string) => `  • "${v}"`).join('\n')}\n\n` +
+        `**Follow-up questions:**\n${responseData.followUp.map((f: string) => `  • "${f}"`).join('\n')}\n\n` +
+        `**Recommended tone:** ${responseData.tone}\n\n` +
+        `**Intensity adjustment:** ${responseIntensity}` +
+        (context ? `\n\n**Context:** "${context}"` : '')
       : `**Panduan Respons Empati untuk ${detectedEmotion.toUpperCase()}:**\n\n` +
-        `🎭 **Frasa pengesahan:**\n${responseData.validation.map((v: string) => `  • "${v}"`).join('\n')}\n\n` +
-        `❓ **Soalan susulan:**\n${responseData.followUp.map((f: string) => `  • "${f}"`).join('\n')}\n\n` +
-        `🎨 **Nada disyorkan:** ${responseData.tone}`;
+        `**Frasa pengesahan:**\n${responseData.validation.map((v: string) => `  • "${v}"`).join('\n')}\n\n` +
+        `**Soalan susulan:**\n${responseData.followUp.map((f: string) => `  • "${f}"`).join('\n')}\n\n` +
+        `**Nada disyorkan:** ${responseData.tone}`;
 
     return {
       success: true,
@@ -768,9 +768,9 @@ export class AgentRegistry {
     const firstPositive = firstHalf.filter(e => positiveEmotions.includes(e.emotion.toLowerCase())).length;
     const secondPositive = secondHalf.filter(e => positiveEmotions.includes(e.emotion.toLowerCase())).length;
     
-    if (secondPositive > firstPositive) return 'Improving 📈';
-    if (secondPositive < firstPositive) return 'Declining 📉';
-    return 'Stable ➡️';
+    if (secondPositive > firstPositive) return 'Improving';
+    if (secondPositive < firstPositive) return 'Declining';
+    return 'Stable';
   }
 
   private generateEmotionalInsights(journey: EmotionalMemory[], dominantEmotion: string, arc: string): string[] {
@@ -801,18 +801,18 @@ export class AgentRegistry {
     blinkRate: number | null = null, totalBlinks: number | null = null,
     blinkDuration: number | null = null, blinkInterval: number | null = null
   ): string {
-    let msg = `**🎭 Real-Time Emotional Analysis:**\n\n`;
+    let msg = `**Real-Time Emotional Analysis:**\n\n`;
     msg += `**Primary Emotion:** ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}\n`;
     msg += `**Attention:** ${attention} (${attentionScore.toFixed(0)}/100)\n`;
     msg += `**Engagement Level:** ${engagement}\n`;
     
     if (sentiment !== 0) {
-      const sentimentLabel = sentiment > 0.3 ? 'Positive 😊' : sentiment < -0.3 ? 'Negative 😔' : 'Neutral 😐';
+      const sentimentLabel = sentiment > 0.3 ? 'Positive' : sentiment < -0.3 ? 'Negative' : 'Neutral';
       msg += `**Sentiment:** ${sentimentLabel} (${sentiment > 0 ? '+' : ''}${sentiment.toFixed(2)})\n`;
     }
     
     if (fatigue !== 'Normal') {
-      msg += `**Fatigue:** ${fatigue} 😴\n`;
+      msg += `**Fatigue:** ${fatigue}\n`;
     }
     
     if (posture && posture !== 'Unknown') {
@@ -833,7 +833,7 @@ export class AgentRegistry {
       msg += `**Avg Blink Interval:** ${blinkInterval.toFixed(2)}s\n`;
     }
     
-    msg += `\n**💡 What This Tells Me:**\n${interpretation}\n`;
+    msg += `\n**What This Tells Me:**\n${interpretation}\n`;
     
     return msg;
   }
@@ -845,18 +845,18 @@ export class AgentRegistry {
     blinkRate: number | null = null, totalBlinks: number | null = null,
     blinkDuration: number | null = null, blinkInterval: number | null = null
   ): string {
-    let msg = `**🎭 ನೈಜ-ಸಮಯದ ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
+    let msg = `**ನೈಜ-ಸಮಯದ ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ:**\n\n`;
     msg += `**ಮುಖ್ಯ ಭಾವನೆ:** ${emotion}\n`;
     msg += `**ಗಮನ:** ${attention} (${attentionScore.toFixed(0)}/100)\n`;
     msg += `**ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆಯ ಮಟ್ಟ:** ${engagement}\n`;
     
     if (sentiment !== 0) {
-      const sentimentLabel = sentiment > 0.3 ? 'ಧನಾತ್ಮಕ 😊' : sentiment < -0.3 ? 'ನಕಾರಾತ್ಮಕ 😔' : 'ತಟಸ್ಥ 😐';
+      const sentimentLabel = sentiment > 0.3 ? 'ಧನಾತ್ಮಕ' : sentiment < -0.3 ? 'ನಕಾರಾತ್ಮಕ' : 'ತಟಸ್ಥ';
       msg += `**ಭಾವನೆ:** ${sentimentLabel} (${sentiment > 0 ? '+' : ''}${sentiment.toFixed(2)})\n`;
     }
     
     if (fatigue !== 'Normal') {
-      msg += `**ಆಯಾಸ:** ${fatigue} 😴\n`;
+      msg += `**ಆಯಾಸ:** ${fatigue}\n`;
     }
     
     // Add blink metrics if available
@@ -873,7 +873,7 @@ export class AgentRegistry {
       msg += `**ಸರಾಸರಿ ಮಿಟುಕು ಮಧ್ಯಂತರ:** ${blinkInterval.toFixed(2)}s\n`;
     }
     
-    msg += `\n**💡 ಇದು ನನಗೆ ಏನು ಹೇಳುತ್ತದೆ:**\n${interpretation}\n`;
+    msg += `\n**ಇದು ನನಗೆ ಏನು ಹೇಳುತ್ತದೆ:**\n${interpretation}\n`;
     
     return msg;
   }
@@ -984,7 +984,7 @@ export class AgentRegistry {
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎭 EMOTIONAL ANALYSIS
+EMOTIONAL ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Dominant Emotion:** ${reportData.emotion_analysis?.dominant_emotion || 'neutral'}
@@ -998,7 +998,7 @@ ${Object.entries(reportData.emotion_analysis?.distribution || {}).map(([emotion,
 ).join('\n')}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💭 SENTIMENT ANALYSIS
+SENTIMENT ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Overall Sentiment:** ${reportData.sentiment_analysis?.overall || 'neutral'}
@@ -1006,7 +1006,7 @@ ${Object.entries(reportData.emotion_analysis?.distribution || {}).map(([emotion,
 **Sentiment Range:** ${(reportData.sentiment_analysis?.min || 0).toFixed(3)} to ${(reportData.sentiment_analysis?.max || 0).toFixed(3)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👀 ATTENTION ANALYSIS
+ATTENTION ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Average Attention Score:** ${(reportData.attention_analysis?.average_score || 50).toFixed(1)}/100
@@ -1014,7 +1014,7 @@ ${Object.entries(reportData.emotion_analysis?.distribution || {}).map(([emotion,
 **Score Range:** ${(reportData.attention_analysis?.min_score || 0).toFixed(1)} to ${(reportData.attention_analysis?.max_score || 100).toFixed(1)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-😴 FATIGUE ANALYSIS
+FATIGUE ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Primary State:** ${reportData.fatigue_analysis?.primary_state || 'Normal'}
@@ -1024,7 +1024,7 @@ ${Object.entries(reportData.fatigue_analysis?.distribution || {}).map(([state, c
 ).join('\n') || '  No fatigue data available'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 ENGAGEMENT ANALYSIS
+ENGAGEMENT ANALYSIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Primary Engagement Level:** ${reportData.engagement_analysis?.primary_level || 'medium'}
@@ -1037,7 +1037,7 @@ ${Object.entries(reportData.engagement_analysis?.distribution || {}).map(([level
         if (includeTimeline && reportData.timeline) {
           report += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📈 EMOTIONAL JOURNEY
+EMOTIONAL JOURNEY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Starting Emotion:** ${reportData.timeline.first_emotion || 'neutral'}
@@ -1055,7 +1055,7 @@ ${(reportData.timeline.emotion_transitions || []).slice(0, 5).map((t: any, i: nu
           const recommendations = this.generatePersonalizedRecommendations(reportData, userName);
           report += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 PERSONALIZED RECOMMENDATIONS FOR ${userName.toUpperCase()}
+PERSONALIZED RECOMMENDATIONS FOR ${userName.toUpperCase()}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${recommendations}
@@ -1064,7 +1064,7 @@ ${recommendations}
 
         report += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📝 SUMMARY
+SUMMARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Dear ${userName},
@@ -1096,17 +1096,17 @@ ARIA - Advanced Relational Intelligence Assistant
 ║  ರಚಿಸಲಾಗಿದೆ: ${new Date().toLocaleString()}
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-🎭 ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ
+ಭಾವನಾತ್ಮಕ ವಿಶ್ಲೇಷಣೆ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **ಪ್ರಮುಖ ಭಾವನೆ:** ${reportData.emotion_analysis?.dominant_emotion || 'neutral'}
 **ಭಾವನಾತ್ಮಕ ಸ್ಥಿರತೆ:** ${reportData.emotion_analysis?.emotional_stability || 'unknown'}
 
-💭 ಸೆಂಟಿಮೆಂಟ್ ವಿಶ್ಲೇಷಣೆ
+ಸೆಂಟಿಮೆಂಟ್ ವಿಶ್ಲೇಷಣೆ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **ಒಟ್ಟಾರೆ:** ${reportData.sentiment_analysis?.overall || 'neutral'}
 **ಸರಾಸರಿ ಸ್ಕೋರ್:** ${(reportData.sentiment_analysis?.average || 0).toFixed(3)}
 
-👀 ಗಮನ ವಿಶ್ಲೇಷಣೆ
+ಗಮನ ವಿಶ್ಲೇಷಣೆ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **ಸರಾಸರಿ ಸ್ಕೋರ್:** ${(reportData.attention_analysis?.average_score || 50).toFixed(1)}/100
 **ಗುಣಮಟ್ಟ:** ${reportData.attention_analysis?.attention_quality || 'moderate'}

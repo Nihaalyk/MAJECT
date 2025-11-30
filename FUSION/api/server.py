@@ -472,13 +472,22 @@ async def get_session_report(session_id: str):
                 "average": sum(sentiments) / len(sentiments) if sentiments else 0.0,
                 "min": min(sentiments) if sentiments else 0.0,
                 "max": max(sentiments) if sentiments else 0.0,
-                "overall": "positive" if sum(sentiments) / len(sentiments) > 0.2 if sentiments else False else "negative" if sum(sentiments) / len(sentiments) < -0.2 if sentiments else False else "neutral"
+                "overall": (
+                    "positive" if (sentiments and sum(sentiments) / len(sentiments) > 0.2)
+                    else "negative" if (sentiments and sum(sentiments) / len(sentiments) < -0.2)
+                    else "neutral"
+                )
             },
             "attention_analysis": {
                 "average_score": sum(attention_scores) / len(attention_scores) if attention_scores else 50.0,
                 "min_score": min(attention_scores) if attention_scores else 0.0,
                 "max_score": max(attention_scores) if attention_scores else 100.0,
-                "attention_quality": "excellent" if sum(attention_scores) / len(attention_scores) > 80 if attention_scores else False else "good" if sum(attention_scores) / len(attention_scores) > 60 if attention_scores else False else "moderate" if sum(attention_scores) / len(attention_scores) > 40 if attention_scores else False else "needs_improvement"
+                "attention_quality": (
+                    "excellent" if (attention_scores and sum(attention_scores) / len(attention_scores) > 80)
+                    else "good" if (attention_scores and sum(attention_scores) / len(attention_scores) > 60)
+                    else "moderate" if (attention_scores and sum(attention_scores) / len(attention_scores) > 40)
+                    else "needs_improvement"
+                )
             },
             "fatigue_analysis": {
                 "distribution": dict(fatigue_counts),

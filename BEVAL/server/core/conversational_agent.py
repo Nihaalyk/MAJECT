@@ -182,7 +182,7 @@ class ConversationalAgent:
         
         await self.state_agent_signal_queue.put(signal)
         logger.info(f"📤 Signaled state agent with: {signal_type}")
-        logger.info(f"📊 Signal data: {data}")
+        logger.info(f"Signal data: {data}")
         logger.info(f"📋 Queue size: {self.state_agent_signal_queue.qsize()}")
     
     async def get_conversation_context(self) -> Dict[str, Any]:

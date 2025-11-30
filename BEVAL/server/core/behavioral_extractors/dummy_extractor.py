@@ -28,7 +28,7 @@ class DummyBehavioralExtractor(BaseBehavioralExtractor):
     
     async def initialize(self) -> bool:
         """Initialize the dummy extractor"""
-        logger.info("🔧 Initializing dummy behavioral extractor...")
+        logger.info("Initializing dummy behavioral extractor...")
         # Simulate initialization delay
         await asyncio.sleep(0.1)
         self.is_initialized = True
@@ -43,7 +43,7 @@ class DummyBehavioralExtractor(BaseBehavioralExtractor):
         if not self.is_initialized:
             await self.initialize()
         
-        logger.info(f"🔍 DUMMY: Extracting behavioral features for timestamp {timestamp}")
+        logger.info(f"DUMMY: Extracting behavioral features for timestamp {timestamp}")
         
         features = []
         
@@ -111,7 +111,7 @@ class DummyBehavioralExtractor(BaseBehavioralExtractor):
                 description=f"Transcribed word: '{word}' at {word_timestamps[i]:.2f}s"
             ))
         
-        logger.info(f"🔍 DUMMY: Generated {len(features)} behavioral features for timestamp {timestamp}")
+        logger.info(f"DUMMY: Generated {len(features)} behavioral features for timestamp {timestamp}")
         return features
     
     async def extract_features_for_time_range(self, start_timestamp: float, end_timestamp: float, context: Dict[str, Any] = None) -> List[BehavioralFeature]:
@@ -119,7 +119,7 @@ class DummyBehavioralExtractor(BaseBehavioralExtractor):
         if not self.is_initialized:
             await self.initialize()
         
-        logger.info(f"🔍 DUMMY: Extracting features for time range {start_timestamp} to {end_timestamp}")
+        logger.info(f"DUMMY: Extracting features for time range {start_timestamp} to {end_timestamp}")
         
         # Generate features at regular intervals within the range
         features = []
@@ -131,7 +131,7 @@ class DummyBehavioralExtractor(BaseBehavioralExtractor):
             features.extend(range_features)
             current_time += interval
         
-        logger.info(f"🔍 DUMMY: Generated {len(features)} features for time range")
+        logger.info(f"DUMMY: Generated {len(features)} features for time range")
         return features
     
     def get_supported_feature_types(self) -> List[str]:

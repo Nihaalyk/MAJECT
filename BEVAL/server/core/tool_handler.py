@@ -147,7 +147,7 @@ async def start_state_agent_processor(session_id: str):
     async def process_state_agent_signals():
         """Process signals from conversational agent to state agent"""
         try:
-            logger.info(f"🔄 State agent processor started for session {session_id}")
+            logger.info(f"State agent processor started for session {session_id}")
             while True:
                 # Wait for signals from conversational agent
                 logger.info(f"⏳ Waiting for signals in session {session_id}...")
@@ -164,7 +164,7 @@ async def start_state_agent_processor(session_id: str):
         except asyncio.CancelledError:
             logger.info(f"🛑 State agent processor cancelled for session {session_id}")
         except Exception as e:
-            logger.error(f"❌ Error in state agent processor for session {session_id}: {str(e)}")
+            logger.error(f"Error in state agent processor for session {session_id}: {str(e)}")
     
     # Start the processor task
     session.state_agent_processor = asyncio.create_task(process_state_agent_signals())
