@@ -195,3 +195,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# SQLite database files
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Virtual environment variants
+venv312/
+venv*/

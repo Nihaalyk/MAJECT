@@ -16,7 +16,7 @@ class VideoConfig:
     """Configuration for video analysis components."""
     
     # Camera settings
-    camera_id: int = 0
+    camera_id: int = 1
     resolution: tuple = (640, 480)
     
     # Feature toggles
