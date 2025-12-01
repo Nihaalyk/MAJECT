@@ -12,6 +12,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# Allow CONVEI/src/lib/ directory
+!CONVEI/src/lib/
 parts/
 sdist/
 var/
@@ -80,6 +82,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# Allow CONVEI/src/lib/ directory
+!CONVEI/src/lib/
 parts/
 sdist/
 var/
