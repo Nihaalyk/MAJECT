@@ -73,34 +73,92 @@ Write-Info "Components: BEVAL (Python), CONVEI (Node.js), FUSION (Python)"
 # Check prerequisites
 Write-Step "Checking Prerequisites"
 
-# Check Python
-if (-not $SkipPython) {
-    Write-Info "Checking Python installation..."
+# Function to find Python 3.12+
+function Find-Python312 {
+    # Try Windows py launcher first (most reliable on Windows)
+    Write-Info "Checking for Python 3.12+ using py launcher..."
     try {
-        $pythonVersion = python --version 2>&1
-        if ($pythonVersion -match "Python (\d+)\.(\d+)") {
-            $major = [int]$matches[1]
-            $minor = [int]$matches[2]
-            if ($major -ge 3 -and $minor -ge 12) {
-                Write-Success "Python $major.$minor found"
-            } else {
-                Write-Error "Python 3.12+ required. Found: $pythonVersion"
-                Write-Info "Please install Python 3.12+ from https://www.python.org/downloads/"
-                exit 1
+        $pyOutput = py -3.12 --version 2>&1
+        if ($pyOutput -match "Python 3\.(\d+)") {
+            $minor = [int]$matches[1]
+            if ($minor -ge 12) {
+                Write-Success "Found Python 3.12+ via py launcher"
+                return "py -3.12"
             }
         }
     } catch {
-        Write-Error "Python not found. Please install Python 3.12+ from https://www.python.org/downloads/"
-        exit 1
+        # py launcher might not be available
     }
+    
+    # Try py -3.13, py -3.14, etc.
+    for ($version = 13; $version -le 15; $version++) {
+        try {
+            $pyOutput = py -3.$version --version 2>&1
+            if ($pyOutput -match "Python 3\.\d+") {
+                Write-Success "Found Python 3.$version via py launcher"
+                return "py -3.$version"
+            }
+        } catch {
+            continue
+        }
+    }
+    
+    # Try direct python3.12 command
+    try {
+        $version = python3.12 --version 2>&1
+        if ($version -match "Python 3\.(\d+)") {
+            $minor = [int]$matches[1]
+            if ($minor -ge 12) {
+                Write-Success "Found Python 3.12+ via python3.12"
+                return "python3.12"
+            }
+        }
+    } catch {
+        # Not available
+    }
+    
+    return $null
+}
 
-    # Check pip
+# Check Python
+if (-not $SkipPython) {
+    Write-Info "Checking Python installation..."
+    
+    # Find Python 3.12+
+    $python312 = Find-Python312
+    
+    if (-not $python312) {
+        Write-Info "Python 3.12+ not found in PATH"
+        Write-Info "The script will use uv to manage Python versions automatically"
+        Write-Info "uv can download and use Python 3.12+ for virtual environments"
+        
+        # Check if we have any Python at all (for uv installation)
+        $hasPython = $false
+        try {
+            $version = python --version 2>&1
+            if ($version -match "Python") {
+                $hasPython = $true
+                Write-Info "Found Python: $version (uv will create venvs with Python 3.12+ from pyproject.toml)"
+            }
+        } catch {
+            Write-Info "No Python found in PATH, uv will download Python 3.12+ when needed"
+        }
+        
+        # If uv is available, try to install Python 3.12
+        if (Get-Command uv -ErrorAction SilentlyContinue) {
+            Write-Info "uv is available - it will automatically use Python 3.12+ for project venvs"
+        }
+    } else {
+        Write-Success "Python 3.12+ available: $python312"
+    }
+    
+    # Check pip (needed for uv installation if not already installed)
     Write-Info "Checking pip..."
     if (-not (Get-Command pip -ErrorAction SilentlyContinue)) {
-        Write-Error "pip not found. Please install pip."
-        exit 1
+        Write-Info "pip not found, but uv will handle package management"
+    } else {
+        Write-Success "pip found"
     }
-    Write-Success "pip found"
 }
 
 # Check Node.js
@@ -135,22 +193,33 @@ if (-not $SkipNode) {
 # Install uv (Python package manager)
 Write-Step "Installing uv (Python Package Manager)"
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-    Write-Info "Installing uv..."
+    Write-Info "Installing uv (can install and manage Python versions)..."
     try {
-        pip install uv
+        # Try using any available Python to install uv
+        if (Get-Command python -ErrorAction SilentlyContinue) {
+            python -m pip install uv
+        } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+            py -3 -m pip install uv
+        } else {
+            throw "No Python found to install uv"
+        }
         Write-Success "uv installed successfully"
     } catch {
-        Write-Error "Failed to install uv. Trying alternative method..."
+        Write-Error "Failed to install uv with pip. Trying official installer..."
         try {
             Invoke-WebRequest -Uri "https://astral.sh/uv/install.ps1" -UseBasicParsing | Invoke-Expression
             Write-Success "uv installed via official installer"
         } catch {
-            Write-Error "Failed to install uv. Please install manually: pip install uv"
-            exit 1
+            Write-Error "Failed to install uv automatically."
+            Write-Info "Please install uv manually:"
+            Write-Info "  pip install uv"
+            Write-Info "  or visit: https://github.com/astral-sh/uv"
+            Write-Info "Continuing anyway - uv can install Python 3.12+ automatically when needed"
         }
     }
 } else {
     Write-Success "uv already installed"
+    Write-Info "uv can automatically download and use Python 3.12+ for virtual environments"
 }
 
 # Setup BEVAL
@@ -162,13 +231,30 @@ if (-not $SkipPython) {
         Write-Info "Setting up BEVAL behavioral analyzer..."
         Push-Location "BEVAL\behavioral_analyzer"
         try {
-            Write-Info "Installing dependencies with uv..."
-            uv sync
+            Write-Info "Installing dependencies with uv (will use Python 3.12+ from pyproject.toml)..."
+            # uv sync automatically uses the Python version specified in pyproject.toml (3.12+)
+            # It will download Python 3.12 if needed
+            uv sync --python 3.12
             Write-Success "BEVAL behavioral analyzer dependencies installed"
         } catch {
-            Write-Error "Failed to install BEVAL behavioral analyzer dependencies"
-            Write-Info "Trying with pip..."
-            pip install -r requirements.txt
+            Write-Error "Failed to install BEVAL behavioral analyzer dependencies with uv"
+            Write-Info "Trying alternative method..."
+            try {
+                # Try to create venv with Python 3.12
+                if ($python312) {
+                    Write-Info "Creating virtual environment with Python 3.12..."
+                    if (-not (Test-Path ".venv")) {
+                        & $python312 -m venv .venv
+                    }
+                    & .venv\Scripts\Activate.ps1
+                    pip install -r requirements.txt
+                    Write-Success "BEVAL behavioral analyzer dependencies installed via pip"
+                } else {
+                    throw "Cannot proceed without Python 3.12+"
+                }
+            } catch {
+                Write-Error "Failed to install dependencies. Please ensure Python 3.12+ is available."
+            }
         }
         Pop-Location
     }
@@ -178,44 +264,47 @@ if (-not $SkipPython) {
         Write-Info "Setting up BEVAL server..."
         Push-Location "BEVAL\server"
         try {
-            Write-Info "Installing dependencies with uv..."
-            uv sync
+            Write-Info "Installing dependencies with uv (will use Python 3.12+ if available)..."
+            # uv sync will use system Python or install 3.12+ if needed
+            uv sync --python 3.12
             Write-Success "BEVAL server dependencies installed"
         } catch {
-            Write-Error "Failed to install BEVAL server dependencies"
-            Write-Info "Trying with pip..."
-            pip install -r requirements.txt
+            Write-Error "Failed to install BEVAL server dependencies with uv"
+            Write-Info "Trying alternative method..."
+            try {
+                if ($python312) {
+                    Write-Info "Creating virtual environment with Python 3.12..."
+                    if (-not (Test-Path ".venv")) {
+                        & $python312 -m venv .venv
+                    }
+                    & .venv\Scripts\Activate.ps1
+                    pip install -r requirements.txt
+                    Write-Success "BEVAL server dependencies installed via pip"
+                } else {
+                    throw "Cannot proceed without Python 3.12+"
+                }
+            } catch {
+                Write-Error "Failed to install dependencies. Please ensure Python 3.12+ is available."
+            }
         }
         Pop-Location
     }
     
     # Install TensorFlow with Intel optimizations if requested
+    # Note: This will be installed in the virtual environments created by uv
     if ($IntelOptimizations) {
         Write-Step "Installing TensorFlow with Intel Optimizations"
-        Write-Info "Installing Intel Extension for TensorFlow..."
-        Write-Info "Note: This requires Intel CPU or compatible hardware"
-        try {
-            # Try installing Intel extension
-            pip install intel-extension-for-tensorflow
-            Write-Success "Intel Extension for TensorFlow installed"
-            
-            # Set environment variables for Intel optimizations
-            Write-Info "Configuring Intel optimizations..."
-            $env:TF_ENABLE_ONEDNN_OPTS = "1"
-            $env:ITEX_LAYOUT_OPT = "1"
-            [System.Environment]::SetEnvironmentVariable("TF_ENABLE_ONEDNN_OPTS", "1", "User")
-            [System.Environment]::SetEnvironmentVariable("ITEX_LAYOUT_OPT", "1", "User")
-            Write-Success "Intel optimizations configured"
-        } catch {
-            Write-Info "Intel Extension installation failed (may not be compatible with your hardware)"
-            Write-Info "Installing standard TensorFlow instead..."
-            try {
-                pip install tensorflow>=2.13.0
-                Write-Success "Standard TensorFlow installed"
-            } catch {
-                Write-Error "Failed to install TensorFlow. It may be installed via uv sync."
-            }
-        }
+        Write-Info "Note: TensorFlow will be installed in virtual environments with Python 3.12+"
+        Write-Info "Intel optimizations will be configured in the venv environments"
+        
+        # Set environment variables for Intel optimizations (will apply to venvs)
+        Write-Info "Configuring Intel optimizations..."
+        $env:TF_ENABLE_ONEDNN_OPTS = "1"
+        $env:ITEX_LAYOUT_OPT = "1"
+        [System.Environment]::SetEnvironmentVariable("TF_ENABLE_ONEDNN_OPTS", "1", "User")
+        [System.Environment]::SetEnvironmentVariable("ITEX_LAYOUT_OPT", "1", "User")
+        Write-Success "Intel optimizations environment variables configured"
+        Write-Info "TensorFlow with Intel extensions will be installed via uv sync in venvs"
     } else {
         Write-Info "Skipping Intel optimizations (standard TensorFlow will be used)"
     }
@@ -228,14 +317,28 @@ if (-not $SkipPython) {
     if (Test-Path "FUSION") {
         Push-Location "FUSION"
         try {
-            Write-Info "Installing FUSION dependencies with uv..."
-            uv sync
+            Write-Info "Installing FUSION dependencies with uv (will use Python 3.12+ from pyproject.toml)..."
+            # uv sync automatically uses the Python version specified in pyproject.toml (3.12+)
+            uv sync --python 3.12
             Write-Success "FUSION dependencies installed"
         } catch {
             Write-Error "Failed to install FUSION dependencies with uv"
-            Write-Info "Trying with pip..."
-            pip install fastapi uvicorn[standard] python-socketio[asyncio-client] httpx python-dotenv colorlog
-            Write-Success "FUSION dependencies installed with pip"
+            Write-Info "Trying alternative method..."
+            try {
+                if ($python312) {
+                    Write-Info "Creating virtual environment with Python 3.12..."
+                    if (-not (Test-Path ".venv")) {
+                        & $python312 -m venv .venv
+                    }
+                    & .venv\Scripts\Activate.ps1
+                    pip install fastapi uvicorn[standard] python-socketio[asyncio-client] httpx python-dotenv colorlog
+                    Write-Success "FUSION dependencies installed via pip"
+                } else {
+                    throw "Cannot proceed without Python 3.12+"
+                }
+            } catch {
+                Write-Error "Failed to install dependencies. Please ensure Python 3.12+ is available."
+            }
         }
         Pop-Location
     }
@@ -253,7 +356,10 @@ if (-not $SkipDatabase) {
                 } else {
                     Write-Info "Initializing database..."
                     if (Get-Command uv -ErrorAction SilentlyContinue) {
-                        uv run python -m db.init_db
+                        # uv will use Python 3.12+ from the project's pyproject.toml
+                        uv run --python 3.12 python -m db.init_db
+                    } elseif ($python312) {
+                        & $python312 -m db.init_db
                     } else {
                         python -m db.init_db
                     }
@@ -268,7 +374,13 @@ if (-not $SkipDatabase) {
                 Write-Info "Trying alternative method..."
                 try {
                     Push-Location "FUSION"
-                    python db\init_db.py
+                    if (Get-Command uv -ErrorAction SilentlyContinue) {
+                        uv run --python 3.12 python db\init_db.py
+                    } elseif ($python312) {
+                        & $python312 db\init_db.py
+                    } else {
+                        python db\init_db.py
+                    }
                     Pop-Location
                     if (Test-Path "FUSION\fusion.db") {
                         Write-Success "Database initialized via direct script"
@@ -278,7 +390,11 @@ if (-not $SkipDatabase) {
                 } catch {
                     Write-Error "Database initialization failed. You may need to run it manually:"
                     Write-Info "  cd FUSION"
-                    Write-Info "  python db\init_db.py"
+                    if (Get-Command uv -ErrorAction SilentlyContinue) {
+                        Write-Info "  uv run --python 3.12 python -m db.init_db"
+                    } else {
+                        Write-Info "  python db\init_db.py"
+                    }
                 }
             }
         Pop-Location
