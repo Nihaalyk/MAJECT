@@ -8,7 +8,8 @@
 #   .\setup.ps1 -SkipNode          # Skip Node.js setup
 #   .\setup.ps1 -SkipPython        # Skip Python setup
 #   .\setup.ps1 -SkipDatabase      # Skip database initialization
-#   .\setup.ps1 -RunServices       # Start all services after setup
+#   .\setup.ps1 -RunServices       # Start all 3 servers after setup
+#   .\setup.ps1 -StartServices     # Alias for -RunServices
 #   .\setup.ps1 -IntelOptimizations:$false  # Skip Intel TensorFlow optimizations
 #
 # Requirements:
@@ -26,8 +27,14 @@ param(
     [switch]$SkipPython,
     [switch]$SkipDatabase,
     [switch]$RunServices,
+    [switch]$StartServices,  # Alias for RunServices, starts all 3 servers
     [switch]$IntelOptimizations = $true
 )
+
+# Alias StartServices to RunServices
+if ($StartServices) {
+    $RunServices = $true
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -464,41 +471,80 @@ Write-Success "All components have been set up successfully"
 Write-Info "`nNext steps:"
 Write-Info "1. Configure .env files in BEVAL/server, FUSION, and CONVEI directories"
 Write-Info "2. Add your API keys and configuration"
-Write-Info "3. Run services using the run scripts or manually"
+Write-Info "3. Run services using: .\setup.ps1 -RunServices"
+Write-Info "   Or start manually using the run scripts in each directory"
 
 if ($RunServices) {
-    Write-Step "Starting Services"
-    Write-Info "This will start all services in separate windows"
+    Write-Step "Starting All Services"
+    Write-Info "Starting 3 independent servers in separate windows..."
     
-    $response = Read-Host "Do you want to start all services now? (y/n)"
-    if ($response -eq "y" -or $response -eq "Y") {
-        Write-Info "Starting services..."
-        
-        # Start FUSION
-        if (Test-Path "FUSION") {
-            Write-Info "Starting FUSION API server..."
-            Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd FUSION; if (Get-Command uv -ErrorAction SilentlyContinue) { uv run python start_fusion_uv.py } else { python start_fusion.py }"
-            Start-Sleep -Seconds 2
-        }
-        
-        # Start BEVAL Server
-        if (Test-Path "BEVAL\server") {
-            Write-Info "Starting BEVAL server..."
-            Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd BEVAL\server; if (Get-Command uv -ErrorAction SilentlyContinue) { uv run python server.py } else { python server.py }"
-            Start-Sleep -Seconds 2
-        }
-        
-        # Start CONVEI
-        if (Test-Path "CONVEI") {
-            Write-Info "Starting CONVEI frontend..."
-            Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd CONVEI; npm start"
-        }
-        
-        Write-Success "All services started in separate windows"
-        Write-Info "FUSION API: http://localhost:8083"
-        Write-Info "BEVAL Server: WebSocket on port 5000, HTTP API on port 8082"
-        Write-Info "CONVEI Frontend: http://localhost:3000"
+    $projectRoot = (Get-Location).Path
+    
+    # Start FUSION API Server (Terminal 1)
+    if (Test-Path "FUSION") {
+        Write-Info "Starting FUSION API server (Terminal 1)..."
+        $fusionPath = Join-Path $projectRoot "FUSION"
+        $fusionCommand = @"
+`$Host.UI.RawUI.WindowTitle = 'FUSION API Server - Port 8083'
+cd '$fusionPath'
+Write-Host 'Starting FUSION API Server...' -ForegroundColor Cyan
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    uv run --python 3.12 python start_fusion_uv.py
+} else {
+    python start_fusion.py
+}
+"@
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $fusionCommand
+        Start-Sleep -Seconds 3
+        Write-Success "FUSION API server starting..."
     }
+    
+    # Start BEVAL Server (Terminal 2)
+    if (Test-Path "BEVAL\server") {
+        Write-Info "Starting BEVAL server (Terminal 2)..."
+        $bevalPath = Join-Path $projectRoot "BEVAL\server"
+        $bevalCommand = @"
+`$Host.UI.RawUI.WindowTitle = 'BEVAL Server - Port 5000/8082'
+cd '$bevalPath'
+Write-Host 'Starting BEVAL Server...' -ForegroundColor Cyan
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    uv run --python 3.12 python server.py
+} else {
+    python server.py
+}
+"@
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $bevalCommand
+        Start-Sleep -Seconds 3
+        Write-Success "BEVAL server starting..."
+    }
+    
+    # Start CONVEI Frontend (Terminal 3)
+    if (Test-Path "CONVEI") {
+        Write-Info "Starting CONVEI frontend (Terminal 3)..."
+        $conveiPath = Join-Path $projectRoot "CONVEI"
+        $conveiCommand = @"
+`$Host.UI.RawUI.WindowTitle = 'CONVEI Frontend - Port 3000'
+cd '$conveiPath'
+Write-Host 'Starting CONVEI Frontend...' -ForegroundColor Cyan
+npm start
+"@
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", $conveiCommand
+        Start-Sleep -Seconds 2
+        Write-Success "CONVEI frontend starting..."
+    }
+    
+    Write-Step "Services Started"
+    Write-Success "All 3 services are starting in separate windows:"
+    Write-Info "`n  Terminal 1: FUSION API Server"
+    Write-Info "    → http://localhost:8083"
+    Write-Info "    → Health check: http://localhost:8083/health"
+    Write-Info "`n  Terminal 2: BEVAL Server"
+    Write-Info "    → WebSocket: ws://localhost:5000"
+    Write-Info "    → HTTP API: http://localhost:8082"
+    Write-Info "`n  Terminal 3: CONVEI Frontend"
+    Write-Info "    → http://localhost:3000"
+    Write-Info "`nEach service is running in its own PowerShell window."
+    Write-Info "Close the windows to stop the respective services."
 }
 
 Write-Step "Setup Summary"
