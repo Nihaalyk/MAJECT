@@ -265,8 +265,8 @@ if (-not $SkipPython) {
         Push-Location "BEVAL\server"
         try {
             Write-Info "Installing dependencies with uv (will use Python 3.12+ if available)..."
-            # uv sync will use system Python or install 3.12+ if needed
-            uv sync --python 3.12
+            # Use --no-install-project to skip building the project as a package (it's a server app, not a library)
+            uv sync --python 3.12 --no-install-project
             Write-Success "BEVAL server dependencies installed"
         } catch {
             Write-Error "Failed to install BEVAL server dependencies with uv"
