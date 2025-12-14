@@ -103,3 +103,9 @@ CREATE INDEX IF NOT EXISTS idx_audio_metrics_session_timestamp ON audio_metrics(
 CREATE INDEX IF NOT EXISTS idx_unified_metrics_session_timestamp ON unified_metrics(session_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_aggregated_metrics_session_window ON aggregated_metrics(session_id, window_start, window_end);
 
+
+
+
+
+
+

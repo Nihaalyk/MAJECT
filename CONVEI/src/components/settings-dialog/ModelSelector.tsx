@@ -5,16 +5,6 @@ import { LiveModel } from "../../types";
 
 const modelOptions: Array<{ value: LiveModel; label: string; description: string }> = [
   { 
-    value: "models/gemini-live-2.5-flash-preview", 
-    label: "Gemini Live 2.5 Flash (Recommended)",
-    description: "Half-cascade audio - Best for production with tool use"
-  },
-  { 
-    value: "models/gemini-2.0-flash-live-001", 
-    label: "Gemini 2.0 Flash Live (Stable)",
-    description: "Half-cascade audio - Stable production model"
-  },
-  { 
     value: "models/gemini-2.5-flash-native-audio-preview-09-2025", 
     label: "Gemini 2.5 Flash Native Audio (Preview)",
     description: "Native audio - Most natural speech with emotion awareness"

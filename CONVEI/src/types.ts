@@ -28,13 +28,10 @@ export type AudioArchitecture = "native" | "half-cascade";
 
 /**
  * Model options for Gemini 2.5 Live API
- * - gemini-live-2.5-flash-preview: Half-cascade audio (recommended for production with tool use)
- * - gemini-2.0-flash-live-001: Half-cascade audio (stable)
- * - gemini-2.5-flash-native-audio-preview-09-2025: Native audio (most natural speech, emotion-aware)
+ * - gemini-2.5-flash-native-audio-preview-09-2025: Native audio (most natural speech, emotion-aware) - Supported for bidiGenerateContent
+ * Note: gemini-live-2.5-flash-preview is not supported for bidiGenerateContent in v1beta API version
  */
 export type LiveModel = 
-  | "models/gemini-live-2.5-flash-preview" 
-  | "models/gemini-2.0-flash-live-001" 
   | "models/gemini-2.5-flash-native-audio-preview-09-2025";
 
 /**

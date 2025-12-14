@@ -34,6 +34,26 @@ db = MetricsDatabase()
 processor = MetricsProcessor(db)
 
 
+def _format_duration(seconds: float) -> str:
+    """Format duration in seconds to human-readable string (e.g., '2m 30s' or '1h 15m 30s')"""
+    if seconds <= 0:
+        return "0m 0s"
+    
+    # Cap at 24 hours for display
+    seconds = min(seconds, 86400)
+    
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    
+    if hours > 0:
+        return f"{hours}h {minutes}m {secs}s"
+    elif minutes > 0:
+        return f"{minutes}m {secs}s"
+    else:
+        return f"{secs}s"
+
+
 @app.get("/")
 async def root():
     """Root endpoint"""
@@ -220,102 +240,130 @@ async def get_session_report(session_id: str):
     try:
         logger.info(f"Report request for session_id: {session_id}")
         
-        # If session_id is "current", find the latest session
+        # If session_id is "current", find the most recent active session
+        # Only consider sessions with data from the last hour to avoid old sessions
         if session_id == "current" or session_id == "current_session":
+            import time
             cursor = db.conn.cursor()
-            # First try unified_metrics
+            current_time = time.time()
+            one_hour_ago = current_time - 3600  # Only look at last hour
+            
+            # First try unified_metrics - get the session with the most recent data
             try:
                 cursor.execute("""
-                    SELECT session_id, MAX(timestamp) as last_time
+                    SELECT session_id, MAX(timestamp) as last_time, COUNT(*) as metric_count
                     FROM unified_metrics
+                    WHERE timestamp > ?
                     GROUP BY session_id
-                    ORDER BY last_time DESC
+                    ORDER BY last_time DESC, metric_count DESC
                     LIMIT 1
-                """)
+                """, (one_hour_ago,))
                 result = cursor.fetchone()
-                if result:
+                if result and result[2] > 0:  # Check that we have metrics
                     session_id = result[0]
-                    logger.info(f"Found session in unified_metrics: {session_id}")
+                    logger.info(f"Found active session in unified_metrics: {session_id} (last update: {result[1]}, metrics: {result[2]})")
                 else:
                     # Fallback: try video_metrics or audio_metrics
                     cursor.execute("""
-                        SELECT session_id, MAX(timestamp) as last_time
+                        SELECT session_id, MAX(timestamp) as last_time, COUNT(*) as metric_count
                         FROM video_metrics
+                        WHERE timestamp > ?
                         GROUP BY session_id
-                        ORDER BY last_time DESC
+                        ORDER BY last_time DESC, metric_count DESC
                         LIMIT 1
-                    """)
+                    """, (one_hour_ago,))
                     result = cursor.fetchone()
-                    if result:
+                    if result and result[2] > 0:
                         session_id = result[0]
-                        logger.info(f"Found session in video_metrics: {session_id}")
+                        logger.info(f"Found active session in video_metrics: {session_id} (last update: {result[1]}, metrics: {result[2]})")
                     else:
                         cursor.execute("""
-                            SELECT session_id, MAX(timestamp) as last_time
+                            SELECT session_id, MAX(timestamp) as last_time, COUNT(*) as metric_count
                             FROM audio_metrics
+                            WHERE timestamp > ?
                             GROUP BY session_id
-                            ORDER BY last_time DESC
+                            ORDER BY last_time DESC, metric_count DESC
                             LIMIT 1
-                        """)
+                        """, (one_hour_ago,))
                         result = cursor.fetchone()
-                        if result:
+                        if result and result[2] > 0:
                             session_id = result[0]
-                            logger.info(f"Found session in audio_metrics: {session_id}")
+                            logger.info(f"Found active session in audio_metrics: {session_id} (last update: {result[1]}, metrics: {result[2]})")
                         else:
-                            logger.warning("No sessions found in any metrics table")
-                            raise HTTPException(status_code=404, detail="No session found in database. Please ensure BEVAL is running and collecting data.")
+                            # If no recent data, try without time filter (but log a warning)
+                            logger.warning("No recent sessions found (last hour), trying all sessions...")
+                            cursor.execute("""
+                                SELECT session_id, MAX(timestamp) as last_time, COUNT(*) as metric_count
+                                FROM unified_metrics
+                                GROUP BY session_id
+                                ORDER BY last_time DESC
+                                LIMIT 1
+                            """)
+                            result = cursor.fetchone()
+                            if result and result[2] > 0:
+                                session_id = result[0]
+                                logger.info(f"Found session (no recent filter): {session_id}")
+                            else:
+                                logger.warning("No sessions found in any metrics table")
+                                raise HTTPException(status_code=404, detail="No session found in database. Please ensure BEVAL is running and collecting data.")
             except sqlite3.OperationalError as e:
                 logger.error(f"Database error while finding session: {e}")
                 raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
         
-        # Get all metrics for the session
+        # Log the resolved session_id to ensure we're using the right one
+        logger.info(f"Generating report for session_id: {session_id}")
+        
+        # Get aggregated stats using SQL (much faster than loading all data)
         cursor = db.conn.cursor()
+        
+        # Add time filter to only include recent data (last 2 hours max) to ensure we only get current session data
+        import time
+        current_time = time.time()
+        two_hours_ago = current_time - 7200  # Only include data from last 2 hours
+        
+        # First check if unified_metrics exist and get count (only from this session and recent)
         try:
             cursor.execute("""
-                SELECT * FROM unified_metrics
-                WHERE session_id = ?
-                ORDER BY timestamp ASC
-            """, (session_id,))
-            
-            columns = [description[0] for description in cursor.description] if cursor.description else []
-            rows = cursor.fetchall()
-            logger.info(f"Found {len(rows)} unified_metrics for session {session_id}")
+                SELECT COUNT(*) as count, 
+                       MIN(timestamp) as start_time,
+                       MAX(timestamp) as end_time
+                FROM unified_metrics
+                WHERE session_id = ? AND timestamp > ?
+            """, (session_id, two_hours_ago))
+            unified_stats = cursor.fetchone()
+            has_unified = unified_stats and unified_stats[0] > 0
         except sqlite3.OperationalError as e:
-            logger.error(f"Error querying unified_metrics: {e}")
-            rows = []
-            columns = []
+            logger.error(f"Error checking unified_metrics: {e}")
+            has_unified = False
+            unified_stats = None
         
         # If no unified_metrics, try to aggregate from video and audio metrics
-        if not rows:
+        if not has_unified:
             logger.warning(f"No unified_metrics found for session {session_id}, trying to aggregate from individual metrics")
             
-            # Get video metrics
+            # Get aggregated stats from video and audio metrics using SQL (only recent data)
             cursor.execute("""
-                SELECT * FROM video_metrics
-                WHERE session_id = ?
-                ORDER BY timestamp ASC
-            """, (session_id,))
-            video_rows = cursor.fetchall()
-            if video_rows:
-                video_columns = [description[0] for description in cursor.description]
-                video_metrics = [dict(zip(video_columns, row)) for row in video_rows]
-            else:
-                video_metrics = []
+                SELECT COUNT(*) as count,
+                       MIN(timestamp) as start_time,
+                       MAX(timestamp) as end_time
+                FROM video_metrics
+                WHERE session_id = ? AND timestamp > ?
+            """, (session_id, two_hours_ago))
+            video_stats = cursor.fetchone()
             
-            # Get audio metrics
             cursor.execute("""
-                SELECT * FROM audio_metrics
-                WHERE session_id = ?
-                ORDER BY timestamp ASC
-            """, (session_id,))
-            audio_rows = cursor.fetchall()
-            if audio_rows:
-                audio_columns = [description[0] for description in cursor.description]
-                audio_metrics = [dict(zip(audio_columns, row)) for row in audio_rows]
-            else:
-                audio_metrics = []
+                SELECT COUNT(*) as count,
+                       MIN(timestamp) as start_time,
+                       MAX(timestamp) as end_time
+                FROM audio_metrics
+                WHERE session_id = ? AND timestamp > ?
+            """, (session_id, two_hours_ago))
+            audio_stats = cursor.fetchone()
             
-            if not video_metrics and not audio_metrics:
+            has_video = video_stats and video_stats[0] > 0
+            has_audio = audio_stats and audio_stats[0] > 0
+            
+            if not has_video and not has_audio:
                 logger.warning(f"No metrics found for session {session_id} in any table")
                 # Return a minimal report structure instead of 404
                 return {
@@ -359,150 +407,362 @@ async def get_session_report(session_id: str):
                     "message": "No behavioral data collected yet for this session. Please ensure BEVAL is running and collecting metrics."
                 }
             
-            # Create synthetic unified metrics from available data
-            metrics = []
-            # Combine video and audio metrics by timestamp (simplified approach)
-            all_timestamps = set()
-            if video_metrics:
-                all_timestamps.update(m.get('timestamp', 0) for m in video_metrics)
-            if audio_metrics:
-                all_timestamps.update(m.get('timestamp', 0) for m in audio_metrics)
+            # Use SQL aggregations instead of loading all data
+            # Get emotion distribution from video metrics (only recent data)
+            cursor.execute("""
+                SELECT emotion, COUNT(*) as count
+                FROM video_metrics
+                WHERE session_id = ? AND emotion IS NOT NULL AND timestamp > ?
+                GROUP BY emotion
+                ORDER BY count DESC
+            """, (session_id, two_hours_ago))
+            emotion_distribution = {row[0]: row[1] for row in cursor.fetchall()}
             
-            for ts in sorted(all_timestamps):
-                video_m = next((m for m in video_metrics if abs(m.get('timestamp', 0) - ts) < 1), None)
-                audio_m = next((m for m in audio_metrics if abs(m.get('timestamp', 0) - ts) < 1), None)
-                
-                unified = {
-                    'session_id': session_id,
-                    'timestamp': ts,
-                    'unified_emotion': video_m.get('emotion') if video_m else audio_m.get('emotion') if audio_m else 'neutral',
-                    'unified_attention': video_m.get('attention_state') if video_m else None,
-                    'unified_posture': video_m.get('posture_state') if video_m else None,
-                    'unified_movement': video_m.get('movement_level') if video_m else None,
-                    'unified_fatigue': video_m.get('fatigue_level') if video_m else None,
-                    'unified_sentiment': audio_m.get('sentiment') if audio_m else None,
-                    'attention_score': video_m.get('attention_score') if video_m else None,
-                    'engagement_level': 'medium',
-                    'video_data': video_m,
-                    'audio_data': audio_m
-                }
-                metrics.append(unified)
-        else:
-            metrics = [dict(zip(columns, row)) for row in rows]
+            # Get sentiment stats from audio metrics (only recent data)
+            cursor.execute("""
+                SELECT AVG(sentiment) as avg_sentiment,
+                       MIN(sentiment) as min_sentiment,
+                       MAX(sentiment) as max_sentiment,
+                       COUNT(*) as count
+                FROM audio_metrics
+                WHERE session_id = ? AND sentiment IS NOT NULL AND timestamp > ?
+            """, (session_id, two_hours_ago))
+            sentiment_row = cursor.fetchone()
+            avg_sentiment = sentiment_row[0] if sentiment_row and sentiment_row[0] is not None else 0.0
+            min_sentiment = sentiment_row[1] if sentiment_row and sentiment_row[1] is not None else 0.0
+            max_sentiment = sentiment_row[2] if sentiment_row and sentiment_row[2] is not None else 0.0
+            
+            # Note: video_metrics doesn't have attention_score, only attention_state
+            # For fallback, we'll use default values or calculate from attention_state if needed
+            avg_attention = 50.0
+            min_attention = 0.0
+            max_attention = 100.0
+            
+            # Get fatigue distribution (only recent data)
+            cursor.execute("""
+                SELECT fatigue_level, COUNT(*) as count
+                FROM video_metrics
+                WHERE session_id = ? AND fatigue_level IS NOT NULL AND timestamp > ?
+                GROUP BY fatigue_level
+            """, (session_id, two_hours_ago))
+            fatigue_distribution = {row[0]: row[1] for row in cursor.fetchall()}
+            
+            # Get first and last emotions for timeline (only recent data)
+            cursor.execute("""
+                SELECT emotion FROM video_metrics
+                WHERE session_id = ? AND emotion IS NOT NULL AND timestamp > ?
+                ORDER BY timestamp ASC
+                LIMIT 1
+            """, (session_id, two_hours_ago))
+            first_emotion_row = cursor.fetchone()
+            first_emotion = first_emotion_row[0] if first_emotion_row else "neutral"
+            
+            cursor.execute("""
+                SELECT emotion FROM video_metrics
+                WHERE session_id = ? AND emotion IS NOT NULL AND timestamp > ?
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (session_id, two_hours_ago))
+            last_emotion_row = cursor.fetchone()
+            last_emotion = last_emotion_row[0] if last_emotion_row else "neutral"
+            
+            # Get emotion transitions (simplified - just count changes, only recent data)
+            cursor.execute("""
+                SELECT COUNT(*) FROM (
+                    SELECT emotion, 
+                           LAG(emotion) OVER (ORDER BY timestamp) as prev_emotion
+                    FROM video_metrics
+                    WHERE session_id = ? AND emotion IS NOT NULL AND timestamp > ?
+                ) WHERE emotion != prev_emotion
+            """, (session_id, two_hours_ago))
+            transitions_row = cursor.fetchone()
+            transitions_count = transitions_row[0] if transitions_row else 0
+            
+            # Get total count and duration
+            total_count = (video_stats[0] if video_stats else 0) + (audio_stats[0] if audio_stats else 0)
+            start_time = min(
+                video_stats[1] if video_stats and video_stats[1] else float('inf'),
+                audio_stats[1] if audio_stats and audio_stats[1] else float('inf')
+            )
+            end_time = max(
+                video_stats[2] if video_stats and video_stats[2] else 0,
+                audio_stats[2] if audio_stats and audio_stats[2] else 0
+            )
+            # Calculate duration - ensure timestamps are valid and reasonable
+            if start_time != float('inf') and end_time and end_time > start_time:
+                duration_seconds = end_time - start_time
+                # Sanity check: cap at 24 hours
+                if duration_seconds > 86400:
+                    logger.warning(f"Duration {duration_seconds}s seems too large, capping at 24h")
+                    duration_seconds = 86400
+            else:
+                duration_seconds = 0
+            
+            # Get sample metrics (only load what we need, only recent data)
+            cursor.execute("""
+                SELECT id, session_id, timestamp, emotion, attention_state, fatigue_level
+                FROM video_metrics
+                WHERE session_id = ? AND timestamp > ?
+                ORDER BY timestamp ASC
+                LIMIT 5
+            """, (session_id, two_hours_ago))
+            sample_start = [dict(zip(['id', 'session_id', 'timestamp', 'unified_emotion', 'unified_attention', 'unified_fatigue'], row)) 
+                           for row in cursor.fetchall()]
+            
+            cursor.execute("""
+                SELECT id, session_id, timestamp, emotion, attention_state, fatigue_level
+                FROM video_metrics
+                WHERE session_id = ? AND timestamp > ?
+                ORDER BY timestamp DESC
+                LIMIT 5
+            """, (session_id, two_hours_ago))
+            sample_end = [dict(zip(['id', 'session_id', 'timestamp', 'unified_emotion', 'unified_attention', 'unified_fatigue'], row)) 
+                         for row in cursor.fetchall()]
+            raw_metrics_sample = sample_start + sample_end
+            
+            # Build report with SQL-aggregated data
+            dominant_emotion = max(emotion_distribution.items(), key=lambda x: x[1])[0] if emotion_distribution else "neutral"
+            primary_fatigue = max(fatigue_distribution.items(), key=lambda x: x[1])[0] if fatigue_distribution else "Normal"
+            
+            report = {
+                "session_id": session_id,
+                "total_data_points": total_count,
+                "duration_seconds": duration_seconds,
+                "duration_formatted": _format_duration(duration_seconds),
+                "emotion_analysis": {
+                    "distribution": emotion_distribution,
+                    "dominant_emotion": dominant_emotion,
+                    "emotional_variety": len(emotion_distribution),
+                    "transitions_count": transitions_count,
+                    "emotional_stability": "stable" if transitions_count < total_count * 0.2 else "moderate" if transitions_count < total_count * 0.4 else "volatile"
+                },
+                "sentiment_analysis": {
+                    "average": avg_sentiment,
+                    "min": min_sentiment,
+                    "max": max_sentiment,
+                    "overall": "positive" if avg_sentiment > 0.2 else "negative" if avg_sentiment < -0.2 else "neutral"
+                },
+                "attention_analysis": {
+                    "average_score": avg_attention,
+                    "min_score": min_attention,
+                    "max_score": max_attention,
+                    "attention_quality": "excellent" if avg_attention > 80 else "good" if avg_attention > 60 else "moderate" if avg_attention > 40 else "needs_improvement"
+                },
+                "fatigue_analysis": {
+                    "distribution": fatigue_distribution,
+                    "primary_state": primary_fatigue
+                },
+                "engagement_analysis": {
+                    "distribution": {"medium": total_count},  # Simplified for fallback
+                    "primary_level": "medium"
+                },
+                "timeline": {
+                    "emotion_transitions": [],  # Simplified - can be enhanced if needed
+                    "first_emotion": first_emotion,
+                    "last_emotion": last_emotion
+                },
+                "raw_metrics_sample": raw_metrics_sample
+            }
+            
+            return report
         
-        # Parse JSON fields
-        for metric in metrics:
-            # Handle video_data
-            if metric.get('video_data'):
-                if isinstance(metric['video_data'], str):
-                    try:
-                        metric['video_data'] = json.loads(metric['video_data'])
-                    except:
-                        pass
-                elif isinstance(metric['video_data'], dict):
-                    # Already parsed
-                    pass
-            # Handle audio_data
-            if metric.get('audio_data'):
-                if isinstance(metric['audio_data'], str):
-                    try:
-                        metric['audio_data'] = json.loads(metric['audio_data'])
-                    except:
-                        pass
-                elif isinstance(metric['audio_data'], dict):
-                    # Already parsed
-                    pass
-            # Handle stress_indicators
-            if metric.get('stress_indicators') and isinstance(metric['stress_indicators'], str):
-                try:
-                    metric['stress_indicators'] = json.loads(metric['stress_indicators'])
-                except:
-                    pass
+        # Use optimized SQL aggregations for unified_metrics
+        # Get aggregated stats directly from SQL (only recent data from current session)
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_count,
+                MIN(timestamp) as start_time,
+                MAX(timestamp) as end_time,
+                AVG(unified_sentiment) as avg_sentiment,
+                MIN(unified_sentiment) as min_sentiment,
+                MAX(unified_sentiment) as max_sentiment,
+                AVG(attention_score) as avg_attention,
+                MIN(attention_score) as min_attention,
+                MAX(attention_score) as max_attention
+            FROM unified_metrics
+            WHERE session_id = ? AND timestamp > ?
+        """, (session_id, two_hours_ago))
+        stats_row = cursor.fetchone()
+        total_count = stats_row[0] if stats_row else 0
+        start_time = stats_row[1] if stats_row and stats_row[1] else 0
+        end_time = stats_row[2] if stats_row and stats_row[2] else 0
+        avg_sentiment = stats_row[3] if stats_row and stats_row[3] is not None else 0.0
+        min_sentiment = stats_row[4] if stats_row and stats_row[4] is not None else 0.0
+        max_sentiment = stats_row[5] if stats_row and stats_row[5] is not None else 0.0
+        avg_attention = stats_row[6] if stats_row and stats_row[6] is not None else 50.0
+        min_attention = stats_row[7] if stats_row and stats_row[7] is not None else 0.0
+        max_attention = stats_row[8] if stats_row and stats_row[8] is not None else 100.0
         
-        # Calculate aggregated stats
-        emotions = [m.get("unified_emotion") for m in metrics if m.get("unified_emotion")]
-        sentiments = [m.get("unified_sentiment") for m in metrics if m.get("unified_sentiment") is not None]
-        attention_scores = [m.get("attention_score") for m in metrics if m.get("attention_score") is not None]
-        fatigue_levels = [m.get("unified_fatigue") for m in metrics if m.get("unified_fatigue")]
-        engagements = [m.get("engagement_level") for m in metrics if m.get("engagement_level")]
-        
-        from collections import Counter
-        
-        # Emotion distribution
-        emotion_counts = Counter(emotions)
-        emotion_distribution = {k: v for k, v in emotion_counts.most_common()}
-        
-        # Fatigue distribution
-        fatigue_counts = Counter(fatigue_levels)
-        
-        # Engagement distribution
-        engagement_counts = Counter(engagements)
-        
-        # Calculate emotion transitions
-        emotion_transitions = []
-        for i in range(1, len(emotions)):
-            if emotions[i] != emotions[i-1]:
-                emotion_transitions.append({
-                    'from': emotions[i-1],
-                    'to': emotions[i],
-                    'index': i
-                })
-        
-        # Session duration
-        if len(metrics) >= 2:
-            start_time = metrics[0].get('timestamp', 0)
-            end_time = metrics[-1].get('timestamp', 0)
+        # Calculate duration - ensure timestamps are valid and reasonable
+        if start_time and end_time and end_time > start_time:
             duration_seconds = end_time - start_time
+            
+            # Check if timestamps might be in milliseconds instead of seconds
+            # If duration is > 86400 (24 hours), timestamps might be in milliseconds
+            if duration_seconds > 86400:
+                # Try converting from milliseconds
+                duration_seconds_ms = (end_time - start_time) / 1000.0
+                if duration_seconds_ms <= 86400:
+                    logger.info(f"Timestamps appear to be in milliseconds, converting. Original: {duration_seconds}s, Converted: {duration_seconds_ms}s")
+                    duration_seconds = duration_seconds_ms
+                else:
+                    # Sanity check: cap at 24 hours to prevent display issues
+                    logger.warning(f"Duration {duration_seconds}s seems too large, capping at 24h. Start: {start_time}, End: {end_time}")
+                    duration_seconds = 86400
         else:
             duration_seconds = 0
         
+        # Get distributions using SQL GROUP BY (much faster, only recent data)
+        cursor.execute("""
+            SELECT unified_emotion, COUNT(*) as count
+            FROM unified_metrics
+            WHERE session_id = ? AND unified_emotion IS NOT NULL AND timestamp > ?
+            GROUP BY unified_emotion
+            ORDER BY count DESC
+        """, (session_id, two_hours_ago))
+        emotion_distribution = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        cursor.execute("""
+            SELECT unified_fatigue, COUNT(*) as count
+            FROM unified_metrics
+            WHERE session_id = ? AND unified_fatigue IS NOT NULL AND timestamp > ?
+            GROUP BY unified_fatigue
+        """, (session_id, two_hours_ago))
+        fatigue_distribution = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        cursor.execute("""
+            SELECT engagement_level, COUNT(*) as count
+            FROM unified_metrics
+            WHERE session_id = ? AND engagement_level IS NOT NULL AND timestamp > ?
+            GROUP BY engagement_level
+        """, (session_id, two_hours_ago))
+        engagement_distribution = {row[0]: row[1] for row in cursor.fetchall()}
+        
+        # Get first and last emotions (only recent data)
+        cursor.execute("""
+            SELECT unified_emotion FROM unified_metrics
+            WHERE session_id = ? AND unified_emotion IS NOT NULL AND timestamp > ?
+            ORDER BY timestamp ASC
+            LIMIT 1
+        """, (session_id, two_hours_ago))
+        first_emotion_row = cursor.fetchone()
+        first_emotion = first_emotion_row[0] if first_emotion_row else "neutral"
+        
+        cursor.execute("""
+            SELECT unified_emotion FROM unified_metrics
+            WHERE session_id = ? AND unified_emotion IS NOT NULL AND timestamp > ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """, (session_id, two_hours_ago))
+        last_emotion_row = cursor.fetchone()
+        last_emotion = last_emotion_row[0] if last_emotion_row else "neutral"
+        
+        # Get emotion transitions count using window function (only recent data)
+        cursor.execute("""
+            SELECT COUNT(*) FROM (
+                SELECT unified_emotion,
+                       LAG(unified_emotion) OVER (ORDER BY timestamp) as prev_emotion
+                FROM unified_metrics
+                WHERE session_id = ? AND unified_emotion IS NOT NULL AND timestamp > ?
+            ) WHERE unified_emotion != prev_emotion
+        """, (session_id, two_hours_ago))
+        transitions_row = cursor.fetchone()
+        transitions_count = transitions_row[0] if transitions_row else 0
+        
+        # Get emotion transitions details (limited to 10, only recent data)
+        cursor.execute("""
+            SELECT 
+                prev_emotion as "from",
+                unified_emotion as "to",
+                row_num as "index"
+            FROM (
+                SELECT 
+                    unified_emotion,
+                    LAG(unified_emotion) OVER (ORDER BY timestamp) as prev_emotion,
+                    ROW_NUMBER() OVER (ORDER BY timestamp) as row_num
+                FROM unified_metrics
+                WHERE session_id = ? AND unified_emotion IS NOT NULL AND timestamp > ?
+            ) WHERE unified_emotion != prev_emotion
+            LIMIT 10
+        """, (session_id, two_hours_ago))
+        emotion_transitions = [{"from": row[0], "to": row[1], "index": row[2]} for row in cursor.fetchall()]
+        
+        # Get sample metrics (only load first 5 and last 5, not all, only recent data)
+        cursor.execute("""
+            SELECT id, session_id, timestamp, unified_emotion, unified_attention, unified_fatigue, 
+                   unified_sentiment, attention_score, engagement_level
+            FROM unified_metrics
+            WHERE session_id = ? AND timestamp > ?
+            ORDER BY timestamp ASC
+            LIMIT 5
+        """, (session_id, two_hours_ago))
+        sample_start = [dict(zip(['id', 'session_id', 'timestamp', 'unified_emotion', 'unified_attention', 
+                                 'unified_fatigue', 'unified_sentiment', 'attention_score', 'engagement_level'], row)) 
+                       for row in cursor.fetchall()]
+        
+        cursor.execute("""
+            SELECT id, session_id, timestamp, unified_emotion, unified_attention, unified_fatigue,
+                   unified_sentiment, attention_score, engagement_level
+            FROM unified_metrics
+            WHERE session_id = ? AND timestamp > ?
+            ORDER BY timestamp DESC
+            LIMIT 5
+        """, (session_id, two_hours_ago))
+        sample_end = [dict(zip(['id', 'session_id', 'timestamp', 'unified_emotion', 'unified_attention',
+                               'unified_fatigue', 'unified_sentiment', 'attention_score', 'engagement_level'], row)) 
+                     for row in cursor.fetchall()]
+        raw_metrics_sample = sample_start + sample_end
+        
+        # Parse JSON only for sample metrics (much faster)
+        for metric in raw_metrics_sample:
+            # We don't need to parse video_data/audio_data for the sample since we're not including them
+            pass
+        
+        from collections import Counter
+        
+        # Build final report
+        dominant_emotion = max(emotion_distribution.items(), key=lambda x: x[1])[0] if emotion_distribution else "neutral"
+        primary_fatigue = max(fatigue_distribution.items(), key=lambda x: x[1])[0] if fatigue_distribution else "Normal"
+        primary_engagement = max(engagement_distribution.items(), key=lambda x: x[1])[0] if engagement_distribution else "medium"
+        
         report = {
             "session_id": session_id,
-            "total_data_points": len(metrics),
+            "total_data_points": total_count,
             "duration_seconds": duration_seconds,
             "duration_formatted": f"{int(duration_seconds // 60)}m {int(duration_seconds % 60)}s",
             "emotion_analysis": {
                 "distribution": emotion_distribution,
-                "dominant_emotion": emotion_counts.most_common(1)[0][0] if emotion_counts else "neutral",
-                "emotional_variety": len(set(emotions)),
-                "transitions_count": len(emotion_transitions),
-                "emotional_stability": "stable" if len(emotion_transitions) < len(emotions) * 0.2 else "moderate" if len(emotion_transitions) < len(emotions) * 0.4 else "volatile"
+                "dominant_emotion": dominant_emotion,
+                "emotional_variety": len(emotion_distribution),
+                "transitions_count": transitions_count,
+                "emotional_stability": "stable" if transitions_count < total_count * 0.2 else "moderate" if transitions_count < total_count * 0.4 else "volatile"
             },
             "sentiment_analysis": {
-                "average": sum(sentiments) / len(sentiments) if sentiments else 0.0,
-                "min": min(sentiments) if sentiments else 0.0,
-                "max": max(sentiments) if sentiments else 0.0,
-                "overall": (
-                    "positive" if (sentiments and sum(sentiments) / len(sentiments) > 0.2)
-                    else "negative" if (sentiments and sum(sentiments) / len(sentiments) < -0.2)
-                    else "neutral"
-                )
+                "average": avg_sentiment,
+                "min": min_sentiment,
+                "max": max_sentiment,
+                "overall": "positive" if avg_sentiment > 0.2 else "negative" if avg_sentiment < -0.2 else "neutral"
             },
             "attention_analysis": {
-                "average_score": sum(attention_scores) / len(attention_scores) if attention_scores else 50.0,
-                "min_score": min(attention_scores) if attention_scores else 0.0,
-                "max_score": max(attention_scores) if attention_scores else 100.0,
-                "attention_quality": (
-                    "excellent" if (attention_scores and sum(attention_scores) / len(attention_scores) > 80)
-                    else "good" if (attention_scores and sum(attention_scores) / len(attention_scores) > 60)
-                    else "moderate" if (attention_scores and sum(attention_scores) / len(attention_scores) > 40)
-                    else "needs_improvement"
-                )
+                "average_score": avg_attention,
+                "min_score": min_attention,
+                "max_score": max_attention,
+                "attention_quality": "excellent" if avg_attention > 80 else "good" if avg_attention > 60 else "moderate" if avg_attention > 40 else "needs_improvement"
             },
             "fatigue_analysis": {
-                "distribution": dict(fatigue_counts),
-                "primary_state": fatigue_counts.most_common(1)[0][0] if fatigue_counts else "Normal"
+                "distribution": fatigue_distribution,
+                "primary_state": primary_fatigue
             },
             "engagement_analysis": {
-                "distribution": dict(engagement_counts),
-                "primary_level": engagement_counts.most_common(1)[0][0] if engagement_counts else "medium"
+                "distribution": engagement_distribution,
+                "primary_level": primary_engagement
             },
             "timeline": {
-                "emotion_transitions": emotion_transitions[:10],  # First 10 transitions
-                "first_emotion": emotions[0] if emotions else "neutral",
-                "last_emotion": emotions[-1] if emotions else "neutral"
+                "emotion_transitions": emotion_transitions,
+                "first_emotion": first_emotion,
+                "last_emotion": last_emotion
             },
-            "raw_metrics_sample": metrics[:5] + metrics[-5:] if len(metrics) > 10 else metrics  # First and last 5
+            "raw_metrics_sample": raw_metrics_sample
         }
         
         return report

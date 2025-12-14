@@ -504,13 +504,31 @@ function ChatInterfaceComponent() {
         // Skip empty lines
         if (!trimmedLine) return;
 
-        // Check if this is a header
+        // Check if this is a header (supports both **Header**: and ==== style)
         if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**:')) {
           const headerText = trimmedLine.slice(2, -3); // Remove ** and **:
           paraElements.push(
             <h3 key={`${paraIndex}-${lineIndex}`} className="markdown-h3">
               {headerText}
             </h3>
+          );
+          return;
+        }
+        
+        // Check for separator lines (━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━)
+        if (/^[━═─]+$/.test(trimmedLine)) {
+          paraElements.push(
+            <hr key={`${paraIndex}-${lineIndex}`} className="markdown-hr" />
+          );
+          return;
+        }
+        
+        // Check for section headers (all caps text on its own line)
+        if (trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length > 3 && /^[A-Z\s]+$/.test(trimmedLine)) {
+          paraElements.push(
+            <h2 key={`${paraIndex}-${lineIndex}`} className="markdown-h2">
+              {trimmedLine}
+            </h2>
           );
           return;
         }

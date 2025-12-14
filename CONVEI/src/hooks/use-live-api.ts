@@ -22,6 +22,7 @@ import { audioContext } from "../lib/utils";
 import VolMeterWorket from "../lib/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
 import { useLoggerStore } from "../lib/store-logger";
+import { DEFAULT_MODEL } from "../constants";
 
 export type UseLiveAPIResults = {
   client: GenAILiveClient;
@@ -43,7 +44,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const audioStreamerRef = useRef<AudioStreamer | null>(null);
   const { log: logToStore } = useLoggerStore();
 
-  const [model, setModel] = useState<string>("models/gemini-live-2.5-flash-preview");
+  const [model, setModel] = useState<string>(DEFAULT_MODEL);
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
   const [volume, setVolume] = useState(0);

@@ -14,6 +14,7 @@ import {
   Modality,
   Type,
 } from "@google/genai";
+import { DEFAULT_MODEL } from "../../constants";
 import "./CustomerServiceAgent.scss";
 
 // Function declarations will be created dynamically based on language
@@ -26,7 +27,7 @@ function CustomerServiceAgentComponent() {
   const [currentAgent, setCurrentAgent] = useState<string>(t("main_agent"));
 
   useEffect(() => {
-    setModel("models/gemini-live-2.5-flash-preview");
+    setModel(DEFAULT_MODEL);
     
     setConfig({
       responseModalities: [Modality.AUDIO],

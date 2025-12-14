@@ -103,7 +103,7 @@ class BEVALCollector:
                 # Try to get latest data from BEVAL's data export file or HTTP endpoint
                 # First try HTTP endpoint if available
                 try:
-                    response = await self.http_client.get(f"{self.beval_url}/api/latest_data", timeout=5.0)
+                    response = await self.http_client.get(f"{self.beval_url}/api/data", timeout=5.0)
                     if response.status_code == 200:
                         data = response.json()
                         await self._process_metric({"type": "unified_state", "data": data})
